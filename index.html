@@ -327,7 +327,10 @@ textarea.inp{resize:vertical;min-height:70px}
 body{margin:0}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .who small{display:block;font-weight:400;font-size:11px;color:var(--faint);line-height:1.2}
-#login{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center;padding:20px}
+#login,#weekly{position:fixed;inset:0;background:var(--bg);z-index:100;display:grid;place-items:center;padding:20px}
+#weekly{z-index:101}
+#weekly h2{margin:0;font-family:var(--f-display);font-size:22px}
+#wkMsg{font-size:13px;min-height:1.2em}
 .lcard{width:100%;max-width:380px;text-align:center;display:flex;flex-direction:column;gap:14px;align-items:stretch}
 .lcard .lb{font-family:var(--f-display);font-weight:700;font-size:30px;display:flex;gap:10px;align-items:center;justify-content:center}
 .lcard .lb i{width:14px;height:14px;border-radius:3px;background:var(--accent);transform:rotate(45deg);display:inline-block}
@@ -404,6 +407,12 @@ body{margin:0}
 <p>Sign in to keep your tasks in sync across your phone and computer.</p>
 <button class="gbtn" data-a="signIn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Sign in with Google</span></button>
 <div id="loginErr" role="alert"></div></div></div>
+<div id="weekly" hidden role="dialog" aria-modal="true" aria-labelledby="wkT"><div class="lcard"><div class="lb"><i></i>TaskFlow</div>
+<h2 id="wkT">Weekly backup</h2>
+<p id="wkP"></p>
+<button class="btn pri" id="wkGo">Back up to Google Drive</button>
+<div id="wkMsg" role="alert"></div>
+<button class="linkbtn" id="wkSkip" hidden>Skip for now (nothing is removed)</button></div></div>
 <div id="modalRoot"></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo" hidden>Undo</button></div>
 
@@ -603,8 +612,9 @@ function mergeData(local,remote){
   out.tasks=byId(remote.tasks,lt);
   ['projects','sections','labels','filters'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
+  if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
-function adopt(remote){remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
+function adopt(remote){stashPurged(remote);remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
   if(S.settings.syncTheme!==false&&remote.user&&remote.user.theme){S.settings.theme=remote.user.theme.mode||S.settings.theme;S.settings.color=remote.user.theme.color||'todoist'}
   S=remote;applyTheme();lastSig=sig();saveLocal();if(!validView(view))view='today'}
 function attach(u){
@@ -614,15 +624,15 @@ function attach(u){
     const v=snap.val();
     if(cloud.first){
       cloud.first=false;
-      if(v==null||!v.json){if(!nameSet()&&u.displayName){S.user.name=u.displayName.split(' ')[0]}pushNow();render();maybeWelcome(true);return}
+      if(v==null||!v.json){if(!nameSet()&&u.displayName){S.user.name=u.displayName.split(' ')[0]}pushNow();render();maybeWelcome(true);setTimeout(checkWeekly,400);return}
       let remote;try{remote=JSON.parse(v.json)}catch(e){setStatus('error');return}
       if(!remote||remote.v!==2||!Array.isArray(remote.tasks)){setStatus('error');return}
       if(S.dirty){S=mergeData(S,remote);S.dirty=true;S.updatedAt=Date.now();lastSig=sig();saveLocal();pushNow()}
       else adopt(remote);
       if(!validView(view))view='today';
-      render();setStatus('synced');maybeWelcome(false);return}
+      render();setStatus('synced');maybeWelcome(false);setTimeout(checkWeekly,400);return}
     if(!v||!v.json||v.writer===CLIENT||S.dirty)return;
-    try{adopt(JSON.parse(v.json));render();setStatus('synced')}catch(e){}
+    try{adopt(JSON.parse(v.json));render();setStatus('synced');checkWeekly()}catch(e){}
   },err=>{console.error(err);setStatus('error')});
   db.ref('.info/connected').on('value',x=>{cloud.online=!!x.val();
     if(!cloud.online&&cloud.ref)setStatus('offline');else if(cloud.status==='offline')setStatus(S.dirty?'syncing':'synced')})}
@@ -715,19 +725,103 @@ async function driveList(){
   const q=encodeURIComponent(`'${folder}' in parents and trashed=false`);
   const r=await(await gfetch(`https://www.googleapis.com/drive/v3/files?pageSize=30&orderBy=${encodeURIComponent('createdTime desc')}&fields=${encodeURIComponent('files(id,name,createdTime,size)')}&q=${q}`)).json();
   return r.files||[]}
-async function driveBackup(){
+/* ---- weekly archive: keep 7 days live, older completed work goes to Drive + this device ---- */
+const ARC_DAYS=7;
+const arcCut=()=>pd(addD(T(),-ARC_DAYS)).getTime();
+const oldDone=(t,c)=>t.done&&!t.sample&&(t.doneAt||t.created||0)<c;
+function archivable(){const c=arcCut();return{tasks:S.tasks.filter(t=>oldDone(t,c)),log:S.log.filter(e=>e.at<c)}}
+function arcDB(){return new Promise((res,rej)=>{
+  if(!window.indexedDB)return rej(new Error('This browser cannot keep an archive on the device.'));
+  const r=indexedDB.open('taskflow-archive',1);
+  r.onupgradeneeded=()=>{r.result.createObjectStore('items',{keyPath:'k'})};
+  r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error||new Error('Archive storage failed.'))})}
+async function arcPut(u,tasks,log){
+  const d=await arcDB();
+  return new Promise((res,rej)=>{const tx=d.transaction('items','readwrite'),st=tx.objectStore('items');
+    tasks.forEach(t=>st.put({k:u+':t:'+t.id,u,kind:'t',data:t}));
+    log.forEach(e=>st.put({k:u+':l:'+e.id,u,kind:'l',data:e}));
+    tx.oncomplete=()=>{d.close();res()};tx.onerror=tx.onabort=()=>rej(tx.error||new Error('Archive storage failed.'))})}
+async function arcAll(u){
+  const d=await arcDB();
+  return new Promise((res,rej)=>{const out={tasks:[],log:[]};const q=d.transaction('items').objectStore('items').openCursor();
+    q.onsuccess=()=>{const c=q.result;if(!c){d.close();res(out);return}const v=c.value;if(v.u===u)(v.kind==='t'?out.tasks:out.log).push(v.data);c.continue()};
+    q.onerror=()=>rej(q.error||new Error('Archive storage failed.'))})}
+function stashPurged(remote){
+  if(!cloud.user||!remote||!Array.isArray(remote.tasks))return;
+  const c=arcCut(),rt=new Set(remote.tasks.map(t=>t.id)),rl=new Set((remote.log||[]).map(e=>e.id));
+  const t=S.tasks.filter(x=>oldDone(x,c)&&!rt.has(x.id)),l=S.log.filter(e=>e.at<c&&!rl.has(e.id));
+  if(t.length||l.length)arcPut(cloud.user.uid,t,l).catch(e=>console.error('archive stash failed',e))}
+const idMerge=(a,b)=>{const m=new Map();(a||[]).forEach(x=>m.set(x.id,x));(b||[]).forEach(x=>m.set(x.id,x));return[...m.values()]};
+function unpack(f){
+  if(f&&f.v===3&&f.live&&Array.isArray(f.live.tasks))return{live:f.live,archive:{tasks:(f.archive&&f.archive.tasks)||[],log:(f.archive&&f.archive.log)||[]}};
+  if(f&&f.v===2&&Array.isArray(f.tasks))return{live:f,archive:{tasks:[],log:[]}};
+  return null}
+async function latestBackup(){
+  const L=await driveList();
+  for(const f of L.slice(0,5)){
+    let j;try{j=await(await gfetch(`https://www.googleapis.com/drive/v3/files/${f.id}?alt=media`)).json()}catch(e){if(e.status===401||e.status===403)throw e;continue}
+    const u=unpack(j);if(u)return u}
+  return null}
+/* purge=true: weekly run. Uploads live data + the whole archive, and only after Drive confirms does it move old completed work off the live site. */
+async function driveBackup(purge){
+  const u=cloud.user;if(!u)throw new Error('Sign in first.');
+  const prev=await latestBackup();
+  let local={tasks:[],log:[]};
+  try{local=await arcAll(u.uid)}catch(e){if(purge)throw e}
+  const out=purge?archivable():{tasks:[],log:[]};
+  const tIds=new Set(out.tasks.map(t=>t.id)),lIds=new Set(out.log.map(e=>e.id));
+  const archive={tasks:idMerge(idMerge(prev&&prev.archive.tasks,local.tasks),out.tasks),log:idMerge(idMerge(prev&&prev.archive.log,local.log),out.log)};
+  const live={...S,dirty:false,tasks:S.tasks.filter(t=>!tIds.has(t.id)),log:S.log.filter(e=>!lIds.has(e.id))};
+  if(purge)await arcPut(u.uid,archive.tasks,archive.log);
   const folder=await backupFolder();
   const d=new Date(),name=`TaskFlow backup ${iso(d)} ${pad(d.getHours())}-${pad(d.getMinutes())}.json`;
   const b='tf'+uid();
-  const body=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[folder],mimeType:'application/json'})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({...S,dirty:false})}\r\n--${b}--`;
+  const body=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[folder],mimeType:'application/json'})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({v:3,app:'taskflow',saved:Date.now(),live,archive})}\r\n--${b}--`;
   await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body});
   try{const L=await driveList();for(const f of L.slice(10))await gfetch('https://www.googleapis.com/drive/v3/files/'+f.id,{method:'DELETE'})}catch(_){}
-  S.ui.lastBackup=Date.now();saveLocal();return name}
+  S.ui.lastBackup=Date.now();
+  if(purge){
+    S.tasks=S.tasks.filter(t=>!(tIds.has(t.id)&&t.done));S.log=S.log.filter(e=>!lIds.has(e.id));
+    S.arch={last:Date.now(),n:((S.arch&&S.arch.n)||0)+1};save();render()}
+  else saveLocal();
+  return{name,moved:out.tasks.length+out.log.length,total:archive.tasks.length+archive.log.length}}
 async function driveRestore(id){
+  const u=cloud.user;if(!u)throw new Error('Sign in first.');
   const n=await(await gfetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`)).json();
-  if(!n||n.v!==2||!Array.isArray(n.tasks))throw new Error('This file is not a TaskFlow backup.');
-  snap();n.ui=S.ui;n.display=S.display;n.recent=S.recent;n.settings=S.settings;
-  S=n;lastSig='';S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();toast('Backup restored from Google Drive',true)}
+  const p=unpack(n);if(!p)throw new Error('This file is not a TaskFlow backup.');
+  const c=arcCut(),lv=p.live;
+  const aT=idMerge(p.archive.tasks,(lv.tasks||[]).filter(t=>oldDone(t,c)));
+  const aL=idMerge(p.archive.log,(lv.log||[]).filter(e=>e.at<c));
+  await arcPut(u.uid,aT,aL);
+  snap();
+  let added=0;
+  const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
+  ['projects','sections','labels','filters'].forEach(k=>addMissing(k,lv[k]));
+  addMissing('tasks',(lv.tasks||[]).filter(t=>!oldDone(t,c)&&!t.sample));
+  addMissing('log',(lv.log||[]).filter(e=>e.at>=c));
+  S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();
+  toast(`Restored: ${added} task${added===1?'':'s'} added, ${aT.length+aL.length} older item${aT.length+aL.length===1?'':'s'} kept on this device`,true)}
+/* compulsory weekly backup */
+let weeklyBusy=false,weeklySkip=false;
+function weeklyDue(){
+  if(!cloud.user||cloud.first||navigator.onLine===false)return false;
+  if(Date.now()-((S.arch&&S.arch.last)||0)<ARC_DAYS*864e5)return false;
+  const a=archivable();return a.tasks.length+a.log.length>0}
+function checkWeekly(){
+  const el=$('weekly');if(!el||weeklyBusy)return;
+  const due=weeklyDue()&&!weeklySkip;
+  if(due&&el.hidden){const a=archivable(),n=a.tasks.length+a.log.length;
+    $('wkP').textContent=`Your tasks are kept live for ${ARC_DAYS} days. ${n} older completed item${n===1?'':'s'} will be saved to your Google Drive and kept on this device, then removed from the live list. Nothing is removed until Drive confirms the backup.`;
+    $('wkMsg').textContent='';$('wkSkip').hidden=true;$('wkGo').disabled=false}
+  el.hidden=!due}
+function wireWeekly(){
+  $('wkGo').onclick=async()=>{const b=$('wkGo'),m=$('wkMsg');b.disabled=true;weeklyBusy=true;m.style.color='';m.textContent='Contacting Google…';
+    try{const r=await driveBackup(true);weeklyBusy=false;$('weekly').hidden=true;toast(`Weekly backup done. ${r.moved} item${r.moved===1?'':'s'} archived.`)}
+    catch(err){console.error(err);weeklyBusy=false;m.style.color='var(--p1)';m.textContent=driveErr(err);b.disabled=false;$('wkSkip').hidden=false}};
+  $('wkSkip').onclick=()=>{weeklySkip=true;$('weekly').hidden=true};
+  setInterval(checkWeekly,60000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkWeekly()});
+  window.addEventListener('online',checkWeekly)}
 function driveErr(e){const m=(e&&e.message)||'';
   if(e&&e.code==='auth/popup-blocked')return'Your browser blocked the Google window. Allow pop-ups for this site and try again.';
   if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'))return'The Google window was closed before it finished. Try again.';
@@ -738,7 +832,7 @@ function driveErr(e){const m=(e&&e.message)||'';
 function driveBlock(){const u=cloud.user;
   const last=S.ui.lastBackup?new Date(S.ui.lastBackup).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):null;
   return `<details class="dd"><summary>Google Drive backup</summary><div class="ddb">`+(u
-   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Saves a copy of all your tasks in a “TaskFlow Backups” folder in your Google Drive and keeps the latest 10. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
+   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Saves a copy of your live tasks and your full archive in a “TaskFlow Backups” folder in your Google Drive and keeps the latest 10. Every ${ARC_DAYS} days the app asks for a backup and then moves completed work older than ${ARC_DAYS} days off the live list. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gdBack">Back up now</button><button class="btn sec" id="gdRest">Restore from Drive</button></div>
    <div class="muted" id="gdMsg" style="font-size:12px;margin-top:6px" role="status"></div><div id="gdList"></div>`
    :`<p class="muted" style="margin:0;font-size:13px">Sign in with Google to use Drive backup.</p>`)+`</div></details>`}
@@ -746,13 +840,13 @@ function wireDrive(){
   const msg=t=>{const e=$('gdMsg');if(e)e.textContent=t};
   if(!$('gdBack'))return;
   $('gdBack').onclick=async e=>{const b=e.currentTarget;b.disabled=true;msg('Contacting Google…');
-    try{const n=await driveBackup();msg('Backed up as “'+n+'”.')}catch(err){console.error(err);msg(driveErr(err))}b.disabled=false};
+    try{const r=await driveBackup(false);msg('Backed up as “'+r.name+'”.')}catch(err){console.error(err);msg(driveErr(err))}b.disabled=false};
   $('gdRest').onclick=async e=>{const b=e.currentTarget;b.disabled=true;msg('Contacting Google…');
-    try{const L=await driveList();msg(L.length?'Choose a backup to restore. This replaces your current tasks (you can undo).':'No backups found in your Drive yet.');
+    try{const L=await driveList();msg(L.length?'Choose a backup to restore. This adds anything that is missing and keeps older history on this device (you can undo).':'No backups found in your Drive yet.');
       $('gdList').innerHTML=L.map(f=>`<div class="row-i" style="cursor:default"><span class="lab">${esc(new Date(f.createdTime).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'}))}</span><button class="btn sec" data-gdr="${f.id}">Restore</button></div>`).join('')}
     catch(err){console.error(err);msg(driveErr(err))}b.disabled=false};
   $('gdList').addEventListener('click',async e=>{const b=e.target.closest('[data-gdr]');if(!b)return;
-    if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to replace';return}
+    if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to restore';return}
     b.disabled=true;msg('Restoring…');try{await driveRestore(b.dataset.gdr)}catch(err){console.error(err);msg(driveErr(err));b.disabled=false}})}
 function accountBlock(){const u=cloud.user;
   return ``+(u
@@ -995,13 +1089,26 @@ function completedHTML(){
   let streak=0,k=cnt(T())?T():addD(T(),-1);while(cnt(k)){streak++;k=addD(k,-1)}
   let h=`<div class="stats"><div class="stat"><b>${cnt(T())}</b><span>Completed today</span></div><div class="stat"><b>${week}</b><span>Last 7 days</span></div><div class="stat"><b>${streak}</b><span>Day streak</span></div></div>
   <div class="bars" role="img" aria-label="Tasks completed per day, last 7 days">${bars}</div>`;
-  if(!log.length)return h+empty('done','Nothing completed yet','Tasks you complete show up here with the day you finished them.');
+  if(!log.length)return h+empty('done','Nothing completed yet','Tasks you complete show up here with the day you finished them.')+'<div id="arcBox"></div>';
   Object.keys(byDay).sort().reverse().forEach(k=>{const n=diffD(k,T()),d=pd(k);
     h+=`<div class="hdr2">${d.getDate()} ${MON[d.getMonth()]} · ${n===0?'Today':n===-1?'Yesterday':DAYS[d.getDay()]}<span class="muted" style="font-weight:500;font-size:12px">${byDay[k].length} done</span></div>`;
     h+=byDay[k].map(e=>{const p=proj(e.project);const tk=S.tasks.find(t=>t.id===e.taskId);
       return`<div class="logrow"><span class="ok">${ic('check')}</span><div style="flex:1;min-width:0"><div>${esc(e.title)}</div><div class="meta">${new Date(e.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}${p?` · <span style="color:${p.color}">#</span> ${esc(p.name)}`:''}</div></div>
       ${tk&&tk.done?`<button class="pill" data-a="toggle" data-id="${tk.id}">Undo</button>`:''}</div>`}).join('')});
-  return h}
+  return h+'<div id="arcBox"></div>'}
+async function fillArc(){
+  const box=$('arcBox');if(!box)return;
+  if(!cloud.user){box.innerHTML='';return}
+  let a;try{a=await arcAll(cloud.user.uid)}catch(e){box.innerHTML='';return}
+  const bx=$('arcBox');if(!bx)return;
+  const live=new Set(S.log.map(e=>e.id)),all=a.log.filter(e=>!live.has(e.id)).sort((x,y)=>y.at-x.at),log=all.slice(0,300);
+  const head=`<h2 class="hdr2" style="margin-top:28px;font-size:15px">Older history <span class="muted" style="font-weight:500;font-size:12px">saved on this device</span></h2>`;
+  if(!log.length){bx.innerHTML=head+`<p class="muted" style="font-size:13px">Completed work older than ${ARC_DAYS} days appears here after a weekly backup. If this is a new device, restore from Google Drive in Settings to bring it back.</p>`;return}
+  const byDay={};log.forEach(e=>{const k=iso(new Date(e.at));(byDay[k]=byDay[k]||[]).push(e)});
+  bx.innerHTML=head+Object.keys(byDay).sort().reverse().map(k=>{const d=pd(k);
+    return`<div class="hdr2">${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()} · ${DAYS[d.getDay()]}<span class="muted" style="font-weight:500;font-size:12px">${byDay[k].length} done</span></div>`+
+    byDay[k].map(e=>{const p=proj(e.project);return`<div class="logrow"><span class="ok">${ic('check')}</span><div style="flex:1;min-width:0"><div>${esc(e.title)}</div><div class="meta">${new Date(e.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}${p?` · <span style="color:${p.color}">#</span> ${esc(p.name)}`:''}</div></div></div>`}).join('')}).join('')+
+    (all.length>log.length?`<p class="muted" style="font-size:12px">Showing the latest ${log.length} of ${all.length} items.</p>`:'')}
 function searchHTML(){
   let h=`<div class="sbox">${ic('search')}<input id="q" placeholder="Search tasks, projects and labels" value="${esc(q)}" autocomplete="off"></div>`;
   if(!q){h+=`<div class="hdr2">Recently viewed</div>`+S.recent.filter(validView).map(v=>`<div class="row-i" data-a="go" data-v="${v}"><span class="ico" style="display:grid;width:20px;place-items:center;color:var(--muted)">${viewIcon(v)}</span><span class="lab">${esc(viewName(v))}</span></div>`).join('');return h}
@@ -1052,6 +1159,7 @@ function render(){
   $('content').innerHTML=`<div class="wrap ${wide?'wide':''}"><h1>${dot}${esc(title)}</h1>${sub}${body}</div>`;
   const qi=$('q');if(qi&&document.activeElement!==qi&&v==='search'){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
   if(detailId)renderDetail();
+  if(view==='completed')fillArc();
 }
 function filterDesc(f){const Q=f.q,p=[];if(Q.pri.length)p.push(Q.pri.map(x=>'P'+x).join(' or '));
   if(Q.labels.length)p.push(Q.labels.map(l=>'@'+(label(l)?.name||l)).join(' or '));
@@ -1399,6 +1507,7 @@ document.addEventListener('scroll',e=>{if(e.target.id==='content')$('crumb').cla
 
 /* ================= boot ================= */
 view=viewOf(location.hash);if(!validView(view))view='today';
+wireWeekly();
 render();
 initCloud();
 </script>
