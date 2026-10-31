@@ -646,9 +646,77 @@ function profileModal(){
   m.querySelector('#prN').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
   m.querySelector('#prTh').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(!b)return;
     S.settings.theme=b.dataset.th;applyTheme();save();m.querySelectorAll('#prTh button').forEach(x=>x.classList.toggle('on',x===b))})}
+/* ================= Google Drive backup ================= */
+const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+let driveTok=null;
+async function driveToken(){
+  if(driveTok&&driveTok.exp>Date.now()+60000)return driveTok.t;
+  if(!auth||!auth.currentUser)throw new Error('Sign in first.');
+  const p=new firebase.auth.GoogleAuthProvider();p.addScope(DRIVE_SCOPE);
+  if(auth.currentUser.email)p.setCustomParameters({login_hint:auth.currentUser.email});
+  const r=await auth.currentUser.reauthenticateWithPopup(p);
+  const t=r.credential&&r.credential.accessToken;
+  if(!t)throw new Error('Google did not give access to Drive.');
+  driveTok={t,exp:Date.now()+50*60000};return t}
+async function gfetch(url,opts={}){
+  const t=await driveToken();opts.headers=Object.assign({Authorization:'Bearer '+t},opts.headers||{});
+  const res=await fetch(url,opts);
+  if(res.status===401)driveTok=null;
+  if(!res.ok){let m='';try{m=(await res.json()).error.message}catch(_){}const e=new Error(m||('Google Drive error '+res.status));e.status=res.status;throw e}
+  return res}
+async function backupFolder(){
+  const q=encodeURIComponent("name='TaskFlow Backups' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+  let r=await(await gfetch('https://www.googleapis.com/drive/v3/files?fields=files(id)&q='+q)).json();
+  if(r.files&&r.files.length)return r.files[0].id;
+  r=await(await gfetch('https://www.googleapis.com/drive/v3/files?fields=id',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:'TaskFlow Backups',mimeType:'application/vnd.google-apps.folder'})})).json();
+  return r.id}
+async function driveList(){
+  const folder=await backupFolder();
+  const q=encodeURIComponent(`'${folder}' in parents and trashed=false`);
+  const r=await(await gfetch(`https://www.googleapis.com/drive/v3/files?pageSize=30&orderBy=${encodeURIComponent('createdTime desc')}&fields=${encodeURIComponent('files(id,name,createdTime,size)')}&q=${q}`)).json();
+  return r.files||[]}
+async function driveBackup(){
+  const folder=await backupFolder();
+  const d=new Date(),name=`TaskFlow backup ${iso(d)} ${pad(d.getHours())}-${pad(d.getMinutes())}.json`;
+  const b='tf'+uid();
+  const body=`--${b}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({name,parents:[folder],mimeType:'application/json'})}\r\n--${b}\r\nContent-Type: application/json\r\n\r\n${JSON.stringify({...S,dirty:false})}\r\n--${b}--`;
+  await gfetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',{method:'POST',headers:{'Content-Type':'multipart/related; boundary='+b},body});
+  try{const L=await driveList();for(const f of L.slice(10))await gfetch('https://www.googleapis.com/drive/v3/files/'+f.id,{method:'DELETE'})}catch(_){}
+  S.ui.lastBackup=Date.now();saveLocal();return name}
+async function driveRestore(id){
+  const n=await(await gfetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`)).json();
+  if(!n||n.v!==2||!Array.isArray(n.tasks))throw new Error('This file is not a TaskFlow backup.');
+  snap();n.ui=S.ui;n.display=S.display;n.recent=S.recent;n.settings=S.settings;
+  S=n;lastSig='';S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();toast('Backup restored from Google Drive',true)}
+function driveErr(e){const m=(e&&e.message)||'';
+  if(e&&e.code==='auth/popup-blocked')return'Your browser blocked the Google window. Allow pop-ups for this site and try again.';
+  if(e&&(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request'))return'The Google window was closed before it finished. Try again.';
+  if(e&&e.code==='auth/user-mismatch')return'Choose the same Google account you signed in with.';
+  if(e&&e.code==='auth/network-request-failed')return'No internet connection. Try again when you are online.';
+  if(e&&e.status===403&&/not been used|disabled|accessNotConfigured/i.test(m))return'Google Drive is not switched on for this project yet. Enable “Google Drive API” in Google Cloud for project taskflow-1112, wait a minute, then try again.';
+  return'Could not finish: '+m}
+function driveBlock(){const u=cloud.user;
+  const last=S.ui.lastBackup?new Date(S.ui.lastBackup).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):null;
+  return `<div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Google Drive backup</div>`+(u
+   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Saves a copy of all your tasks in a “TaskFlow Backups” folder in your Google Drive and keeps the latest 10. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gdBack">Back up now</button><button class="btn sec" id="gdRest">Restore from Drive</button></div>
+   <div class="muted" id="gdMsg" style="font-size:12px;margin-top:6px" role="status"></div><div id="gdList"></div>`
+   :`<p class="muted" style="margin:0;font-size:13px">Sign in with Google to use Drive backup.</p>`)}
+function wireDrive(){
+  const msg=t=>{const e=$('gdMsg');if(e)e.textContent=t};
+  if(!$('gdBack'))return;
+  $('gdBack').onclick=async e=>{const b=e.currentTarget;b.disabled=true;msg('Contacting Google…');
+    try{const n=await driveBackup();msg('Backed up as “'+n+'”.')}catch(err){console.error(err);msg(driveErr(err))}b.disabled=false};
+  $('gdRest').onclick=async e=>{const b=e.currentTarget;b.disabled=true;msg('Contacting Google…');
+    try{const L=await driveList();msg(L.length?'Choose a backup to restore. This replaces your current tasks (you can undo).':'No backups found in your Drive yet.');
+      $('gdList').innerHTML=L.map(f=>`<div class="row-i" style="cursor:default"><span class="lab">${esc(new Date(f.createdTime).toLocaleString([],{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'}))}</span><button class="btn sec" data-gdr="${f.id}">Restore</button></div>`).join('')}
+    catch(err){console.error(err);msg(driveErr(err))}b.disabled=false};
+  $('gdList').addEventListener('click',async e=>{const b=e.target.closest('[data-gdr]');if(!b)return;
+    if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to replace';return}
+    b.disabled=true;msg('Restoring…');try{await driveRestore(b.dataset.gdr)}catch(err){console.error(err);msg(driveErr(err));b.disabled=false}})}
 function accountBlock(){const u=cloud.user;
   return `<div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Account</div>`+(u
-   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Signed in as <b>${esc(u.email||u.displayName||'')}</b>. ${syncLabel()}.</p><button class="btn sec" data-a="signOut">Sign out</button>`
+   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Signed in as <b>${esc(u.email||u.displayName||'')}</b><br>Status: ${syncLabel()}</p><button class="btn sec" data-a="signOut">Sign out</button>`
    :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="gbtn" data-a="signIn">${GLOGO}<span>Sign in with Google</span></button>`)}
 function initCloud(){
   try{firebase.initializeApp(FB_CFG);auth=firebase.auth();db=firebase.database()}
@@ -1156,7 +1224,8 @@ function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class
   <div class="switch"><label for="stT">Theme</label><select id="stT">${[['system','Match system'],['dark','Dark'],['light','Light']].map(([a,b])=>`<option value="${a}" ${S.settings.theme===a?'selected':''}>${b}</option>`).join('')}</select></div>
   <div class="switch"><label for="stW">Week starts on</label><select id="stW"><option value="1" ${S.settings.weekStart===1?'selected':''}>Monday</option><option value="0" ${S.settings.weekStart===0?'selected':''}>Sunday</option></select></div>
   ${accountBlock()}
-  <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Backup</div>
+  ${driveBlock()}
+  <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Manual backup (copy and paste)</div>
   <p class="muted" style="margin:0 0 8px;font-size:13px">Copy a backup as a safety copy of everything, or restore one.</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="stCopy">${'Copy backup'}</button><button class="btn sec" id="stImp">Restore from backup</button><button class="btn danger" id="stReset">Reset all data</button></div>
   <textarea class="inp" id="stBox" hidden style="margin-top:10px;min-height:110px;font-size:12px" placeholder="Paste a backup here"></textarea>
@@ -1165,6 +1234,7 @@ function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class
   <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / Inbox · <b>Esc</b> close</p></div>
   <div class="mf"><button class="btn pri" data-a="closeModal">Done</button></div>`);
   $('stN').onchange=e=>{S.user.name=e.target.value.trim();commit()};
+  wireDrive();
   $('stT').onchange=e=>{S.settings.theme=e.target.value;applyTheme();commit()};
   $('stW').onchange=e=>{S.settings.weekStart=+e.target.value;S.ui.upStart=null;commit()};
   $('stCopy').onclick=async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);$('stMsg').textContent='Backup copied. Paste it into a note or email to keep it.'}catch(e){$('stBox').hidden=false;$('stBox').value=txt;$('stBox').select();$('stMsg').textContent='Copy the selected text above.'}};
