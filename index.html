@@ -477,6 +477,7 @@ button:active{transform:scale(.97)}
 .chap label{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.chap .cn{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:26px}
 .chap .cin{flex:1;min-width:0;background:none;border:0;padding:6px 4px;border-radius:6px}.chap .cin:focus{background:var(--raise);outline:0}
 .chap.done .cin{text-decoration:line-through;color:var(--faint)}.chapadd{display:flex;gap:8px}.chapadd .inp{flex:1;min-width:0}
+.task,.nav-i,.row-i,.exc,.chap,.card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.cin{-webkit-user-select:text;user-select:text}
 </style>
 </head>
 <body>
@@ -1702,6 +1703,28 @@ function drawSettings(){
 /* ================= toast ================= */
 let tt;function toast(msg,undo){$('toastMsg').textContent=msg;$('toastUndo').hidden=!undo;$('toast').hidden=false;clearTimeout(tt);tt=setTimeout(()=>$('toast').hidden=true,4500)}
 $('toastUndo').onclick=()=>{if(!undoSnap)return;S=JSON.parse(undoSnap);undoSnap=null;applyTheme();save();$('toast').hidden=true;if(!validView(view))go('today');render()};
+
+/* ================= hold (long-press) or right-click to edit ================= */
+(()=>{let timer=null,sx=0,sy=0,held=false;
+  function editAt(el){if(!el||!el.closest)return false;
+    const li=el.closest('li.chap');if(li){const i=li.querySelector('.cin');if(i){i.focus();i.select();return true}}
+    const ex=el.closest('[data-a="editExam"]');if(ex){editExam(ex.dataset.id);return true}
+    const rm=el.closest('[data-a="editRem"]');if(rm&&rm.dataset.id){editRem(rm.dataset.id,rm.dataset.d);return true}
+    const tk=el.closest('.task[data-id],.card[data-id]');if(tk&&tk.dataset.id&&S.tasks.some(t=>t.id===tk.dataset.id)){openTask(tk.dataset.id);return true}
+    const nv=el.closest('[data-v]');if(nv&&nv.dataset.a==='go'){const[k,id]=nv.dataset.v.split(':');
+      if(k==='p'&&id!=='inbox'&&proj(id)){editProject(id);return true}
+      if(k==='l'&&label(id)){editLabel(id);return true}
+      if(k==='f'&&filt(id)){editFilter(id);return true}
+      if(k==='b'&&book(id)){editBook(id);return true}}
+    return false}
+  const clear=()=>{if(timer){clearTimeout(timer);timer=null}};
+  document.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('input,textarea,select,.chk'))return;held=false;sx=e.clientX;sy=e.clientY;const t=e.target;clear();
+    timer=setTimeout(()=>{timer=null;if(editAt(t)){held=true;try{navigator.vibrate&&navigator.vibrate(15)}catch(_){}}},500)},true);
+  document.addEventListener('pointermove',e=>{if(timer&&Math.hypot(e.clientX-sx,e.clientY-sy)>8)clear()},true);
+  ['pointerup','pointercancel','scroll'].forEach(ev=>document.addEventListener(ev,clear,true));
+  document.addEventListener('click',e=>{if(held){held=false;e.stopPropagation();e.preventDefault()}},true);
+  document.addEventListener('contextmenu',e=>{if(e.target.closest('input,textarea,select'))return;if(editAt(e.target))e.preventDefault()},true);
+})();
 
 /* ================= events ================= */
 document.addEventListener('click',e=>{
