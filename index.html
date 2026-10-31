@@ -1261,6 +1261,18 @@ const SYL={
  'GS3|Internal Security':['Terrorism & extremism','Border management','Cyber & money laundering','Organised crime','Role of security forces'],
  'GS4|Ethics':['Ethics & human interface','Attitude','Aptitude & emotional intelligence','Moral thinkers','Public service values','Ethics in governance','Probity','Case studies']};
 const topic=id=>S.topics.find(x=>x.id===id);
+const ANCIENT=["The Significance of Ancient Indian History", "Modern Historians of Ancient India", "Nature of Sources and Historical Construction", "Geographical Setting", "Ecology and Environment", "The Linguistic Background", "Human Evolution: The Old Stone Age", "The Neolithic Age: First Food Producers and Animal Keepers", "Chalcolithic Cultures", "Harappan Culture: Bronze Age Urbanization in the Indus Valley", "Identity of Aryan Culture", "The Age of the Rig Veda", "The Later Vedic Phase: Transition to State and Social Orders", "Jainism and Buddhism", "Territorial States and the Rise of Magadha", "Iranian and Macedonian Invasions", "State Structure and the Varna System in the Age of the Buddha", "The Maurya Age", "The Significance of Maurya Rule", "Central Asian Contact and Mutual Impact", "The Satavahana Phase", "The Dawn of History in the Deep South", "Crafts, Commerce, and Urban Growth (200 BC–AD 250)", "Rise and Growth of the Gupta Empire", "Life in the Gupta Age", "Spread of Civilization in Eastern India", "Harsha and His Times", "Brahmanization, Rural Expansion, and Peasant Protest in the Peninsula", "Developments in Philosophy", "Cultural Interaction with Asian Countries", "From Ancient to Medieval", "Sequence of Social Changes", "Legacy in Science and Civilization"];
+function ancientPreset(){snap();
+  const hist=S.projects.find(p=>!p.folder&&p.name.toLowerCase()==='history');
+  let g1=S.projects.find(p=>p.folder&&p.name==='GS1');if(!hist&&!g1){g1={id:uid(),name:'GS1',color:'#ff9933',parent:null,fav:false,archived:false,order:S.projects.length,folder:true};S.projects.push(g1)}
+  let sp=S.projects.find(p=>!p.folder&&p.name.toLowerCase()==='ancient history');
+  if(!sp){sp={id:uid(),name:'Ancient History',color:'#ff9933',parent:hist?hist.id:g1.id,fav:false,archived:false,order:S.projects.length,folder:false};S.projects.push(sp)}
+  const have=new Set(S.topics.filter(t=>t.project===sp.id).map(t=>t.name.toLowerCase()));let n=0;
+  ANCIENT.forEach((nm,i)=>{const full=(i+1)+'. '+nm;if(!have.has(full.toLowerCase())){S.topics.push({id:uid(),project:sp.id,name:full,read:null,revs:[],order:S.topics.length});n++}});
+  let bk=S.books.find(b=>b.name.toLowerCase()==="india's ancient past");
+  if(!bk){bk={id:uid(),name:"India's Ancient Past",author:'R. S. Sharma',subject:sp.id,notes:'',created:Date.now(),chapters:[]};S.books.push(bk)}
+  if(!(bk.chapters||[]).length)bk.chapters=ANCIENT.map((nm,i)=>({id:uid(),name:(i+1)+'. '+nm,done:false}));
+  commit('Ancient History added: '+n+' topics + book with '+ANCIENT.length+' chapters',true)}
 function topicPreset(){snap();
   const folder=n=>{let f=S.projects.find(p=>p.folder&&p.name.toLowerCase()===n.toLowerCase());if(!f){f={id:uid(),name:n,color:'#ff9933',parent:null,fav:false,archived:false,order:S.projects.length,folder:true};S.projects.push(f)}return f.id};
   let n=0;Object.entries(SYL).forEach(([k,list])=>{const[g,sn]=k.split('|');let sp=S.projects.find(p=>!p.folder&&p.name.toLowerCase()===sn.toLowerCase());
@@ -1296,7 +1308,7 @@ function syllabusHTML(){
     <div><b>${pc(rvDone,rv.length)}%</b><span>revisions done (${rvDone}/${rv.length})</span>${bar(pc(rvDone,rv.length))}</div>
     <div><b style="color:${late?'var(--p1)':'inherit'}">${late}</b><span>revisions overdue</span></div></div>
     <p class="muted" style="margin:10px 0 0;font-size:12.5px">Tick a topic as read, then add your own revision dates with the + button. Plan each day in <b>Daily plan</b>.</p></div>`;
-  const preset=`<button class="pill" data-a="topicPreset">${ic('plus')} Load UPSC topics</button>`;
+  const preset=`<span style="display:flex;gap:6px;flex-wrap:wrap"><button class="pill" data-a="topicPreset">${ic('plus')} Load UPSC topics</button><button class="pill" data-a="ancientPreset">${ic('plus')} Ancient History (33 ch)</button></span>`;
   const order=subs.slice().sort((a,b)=>projPath(a.id).localeCompare(projPath(b.id)));
   const cards=order.map(p=>{const L=S.topics.filter(t=>t.project===p.id).sort((a,b)=>a.order-b.order),dn=L.filter(t=>t.read).length;
     return`<div class="nkcard syl" style="margin-bottom:12px"><div class="nkh"><span class="mon" style="font-size:15px">📂 ${esc(projPath(p.id))}</span><span class="muted">${L.length?dn+'/'+L.length+' read':'no topics'}</span></div>${L.length?bar(pc(dn,L.length)):''}
@@ -1835,6 +1847,7 @@ document.addEventListener('click',e=>{
   case'editFolder':stop();editProject(null,null,true);break;
   case'editBook':stop();editBook(id);break;
   case'topicPreset':stop();topicPreset();break;
+  case'ancientPreset':stop();ancientPreset();break;
   case'tpAdd':{stop();const i=document.querySelector(`[data-tpn-new="${id}"]`);if(i)addTopics(id,i.value);break}
   case'tpDel':{stop();snap();S.topics=S.topics.filter(x=>x.id!==id);commit('Topic removed',true);break}
   case'tpRev':stop();revModal(id,+b.dataset.n);break;
