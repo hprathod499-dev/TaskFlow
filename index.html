@@ -62,6 +62,7 @@ aside{background:var(--side);border-right:1px solid var(--line);display:flex;fle
 .nav-i{display:flex;align-items:center;gap:9px;padding:6px 8px;padding-left:calc(8px + var(--d,0)*16px);border-radius:6px;cursor:pointer;color:var(--fg);user-select:none;min-height:34px}
 .nav-i:hover{background:var(--hover)}
 .nav-i.on{background:var(--accent-soft);color:var(--accent)}
+.navhr{height:1px;background:var(--line);margin:8px 8px}
 .nav-i.on .n{color:var(--accent)}
 .nav-i .lab{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .nav-i .n{font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
@@ -178,6 +179,35 @@ ul.tl{list-style:none;margin:0;padding:0}
 .cell.today .dn{background:var(--accent-btn);color:var(--accent-fg)}
 .chip{font-size:11.5px;padding:2px 6px;border-radius:4px;background:var(--raise);border-left:3px solid var(--pc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .chip.done{text-decoration:line-through;color:var(--faint)}
+
+/* study pages */
+.cal.tcal{min-width:0;grid-template-columns:repeat(7,minmax(0,1fr))}
+.cell.tc{min-height:84px;text-align:left;background:none;color:inherit;font:inherit;align-items:stretch;position:relative}
+.cell.tc.sel{outline:2px solid var(--accent);outline-offset:-2px;background:var(--accent-soft)}
+.cell.tc .dots{display:flex;gap:3px;flex-wrap:wrap;min-height:7px}
+.cell.tc .dots i{width:7px;height:7px;border-radius:50%;background:var(--pc,var(--faint))}
+.cell.tc .dots i.rm{background:var(--blue)} .cell.tc .dots i.ex{background:var(--p1);border-radius:2px}
+.cell.tc .cnt{position:absolute;left:5px;top:5px;font-size:11px;color:var(--muted);font-weight:600}
+.cell.tc .cchips{display:none;flex-direction:column;gap:2px;min-width:0}
+.chip.ex{border-left-color:var(--p1)}
+@media(min-width:760px){.cell.tc{min-height:104px}.cell.tc .cchips{display:flex}.cell.tc .dots,.cell.tc .cnt{display:none}}
+@media(max-width:560px){.cell.tc{min-height:64px;padding:3px}.cal.tcal .dh{padding:4px 2px;font-size:11px;text-align:center}}
+.dpanel{margin-top:16px;border-top:1px solid var(--line);padding-top:4px}
+#remBox{position:fixed;top:12px;right:12px;z-index:200;display:flex;flex-direction:column;gap:8px;width:min(360px,calc(100vw - 24px))}
+.remcard{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
+.rc-i{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;flex:none}
+.rc-b{flex:1;min-width:0}.rc-b b{display:block;overflow-wrap:anywhere}.rc-b small{color:var(--muted)}
+.rc-a{display:flex;flex-direction:column;gap:4px;align-items:flex-end}
+.rc-a button{font-size:12px;font-weight:600;color:var(--accent);padding:2px 4px}
+.exc{border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0;background:var(--card);cursor:pointer}
+.exc:hover{background:var(--hover)} .exc.past{opacity:.6}
+.exh{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.ext{font-weight:700;font-size:16px;overflow-wrap:anywhere}
+.exd{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px;margin-top:3px}.exd svg{width:14px;height:14px}
+.exn{text-align:right;color:var(--muted);font-size:13px;white-space:nowrap}
+.exn b{display:block;font-size:26px;line-height:1;color:var(--accent);font-family:var(--f-display)}
+.exb{height:6px;border-radius:3px;background:var(--raise);margin:12px 0 6px;overflow:hidden}.exb i{display:block;height:100%;background:var(--accent-btn);border-radius:3px}
+.exs{font-size:12.5px;color:var(--muted);margin-top:4px}
 
 /* completed / reporting */
 .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:18px}
@@ -439,7 +469,9 @@ const IC={
  board:'M4 5h4v14H4zM10 5h4v10h-4zM16 5h4v7h-4z', calgrid:'M4 5h16v14H4zM4 10h16M4 14.5h16M9.3 10v9M14.6 10v9',
  edit:'M4 20h4L19 9l-4-4L4 16z', copy:'M8 8h11v11H8zM5 16V5h11', check:'M5 12l5 5 9-10',
  sub:'M6 4v9a3 3 0 0 0 3 3h10M16 13l3 3-3 3', gear:'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1',
- folder:'M4 6h6l2 2h8v11H4z', arrow:'M5 12h14M13 6l6 6-6 6', archive:'M4 5h16v4H4zM6 9v10h12V9M10 13h4',
+ folder:'M4 6h6l2 2h8v11H4z',
+ bell:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',
+ book:'M5 4h10a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3zM5 17a3 3 0 0 1 3-3h10', arrow:'M5 12h14M13 6l6 6-6 6', archive:'M4 5h16v4H4zM6 9v10h12V9M10 13h4',
  user:'M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8zM5 20c0-4 3-6 7-6s7 2 7 6',
  sun:'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
  moon:'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
@@ -573,11 +605,13 @@ function demoData(){
     t('Note down doubts for mentor call',{project:'inbox'}),
   ];
   tasks.forEach((x,i)=>x.order=i);
-  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],
+  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],books:[],reminders:[],exams:[],
     display:{},recent:['upcoming','today','p:matrix','p:isec','p:society','p:geography'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}};
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||S.v!==2)S=sampleData();
+function ensure(x){['books','reminders','exams'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
+ensure(S);
 /* ================= cloud sync (Firebase Realtime Database) ================= */
 const FB_CFG={
   apiKey:"AIzaSyDXM9yykhy6lE5KnVKtqTIIzA7gQCDviPU",
@@ -606,15 +640,16 @@ function pushNow(){
     setStatus(cloud.online?'synced':'offline')
   }).catch(e=>{console.error(e);setStatus('error')})}
 function mergeData(local,remote){
+  ensure(local);ensure(remote);
   const byId=(a,b)=>{const m=new Map((a||[]).map(x=>[x.id,x]));(b||[]).forEach(x=>m.set(x.id,x));return[...m.values()]};
   const lt=(local.tasks||[]).filter(t=>!t.sample);
   const out=remote;
   out.tasks=byId(remote.tasks,lt);
-  ['projects','sections','labels','filters'].forEach(k=>out[k]=byId(remote[k],local[k]));
+  ['projects','sections','labels','filters','books','reminders','exams'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
-function adopt(remote){stashPurged(remote);remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
+function adopt(remote){ensure(remote);stashPurged(remote);remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
   if(S.settings.syncTheme!==false&&remote.user&&remote.user.theme){S.settings.theme=remote.user.theme.mode||S.settings.theme;S.settings.color=remote.user.theme.color||'todoist'}
   S=remote;applyTheme();lastSig=sig();saveLocal();if(!validView(view))view='today'}
 function attach(u){
@@ -796,7 +831,7 @@ async function driveRestore(id){
   snap();
   let added=0;
   const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
-  ['projects','sections','labels','filters'].forEach(k=>addMissing(k,lv[k]));
+  ensure(S);['projects','sections','labels','filters','books','reminders','exams'].forEach(k=>addMissing(k,lv[k]));
   addMissing('tasks',(lv.tasks||[]).filter(t=>!oldDone(t,c)&&!t.sample));
   addMissing('log',(lv.log||[]).filter(e=>e.at>=c));
   S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();
@@ -892,7 +927,9 @@ function commit(msg,undo){save();render();if(msg)toast(msg,undo)}
 /* ================= helpers ================= */
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const proj=id=>id==='inbox'?{id:'inbox',name:'Inbox',color:'var(--blue)'}:S.projects.find(p=>p.id===id);
+const proj=id=>id==='inbox'?{id:'inbox',name:'No subject',color:'var(--blue)'}:S.projects.find(p=>p.id===id);
+const book=id=>S.books.find(b=>b.id===id);
+const isFolder=id=>{const x=S.projects.find(p=>p.id===id);return!!(x&&x.folder)};
 const label=id=>S.labels.find(l=>l.id===id);
 const filt=id=>S.filters.find(f=>f.id===id);
 const sect=id=>S.sections.find(s=>s.id===id);
@@ -904,19 +941,20 @@ function labelId(name){let l=S.labels.find(x=>x.name.toLowerCase()===name.toLowe
 /* ================= routing ================= */
 let view='today', q='';
 const hashOf=v=>v.replace(':','-');
-const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plf])-(.+)$/);return m?m[1]+':'+m[2]:h};
+const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plfb])-(.+)$/);return m?m[1]+':'+m[2]:h};
 function go(v){if(location.hash.slice(1)!==hashOf(v))location.hash=hashOf(v);else{view=v;render()}$('app').classList.remove('drawer')}
 window.addEventListener('hashchange',()=>{view=viewOf(location.hash);if(!validView(view))view='today';track(view);render();$('content').scrollTop=0});
-function validView(v){const[k,id]=v.split(':');if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects'].includes(v)}
+function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books'].includes(v)}
 function track(v){if(v==='search')return;S.recent=[v,...S.recent.filter(x=>x!==v)].slice(0,8);save()}
 function viewName(v){const[k,id]=v.split(':');
-  if(k==='p')return id==='inbox'?'Inbox':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
-  return{inbox:'Inbox',today:'Today',upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Projects'}[v]}
+  if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
+  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
-  if(k==='p')return`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
+  if(k==='b')return`<span style="display:grid">${ic('book')}</span>`;
+  if(k==='p')return isFolder(id)?`<span style="color:${proj(id)?.color};display:grid">${ic('folder')}</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return ic({inbox:'inbox',today:'today',upcoming:'upcoming',search:'search',filters:'filters',completed:'report',projects:'folder'}[v]||'list')}
+  return ic({inbox:'inbox',today:'today',upcoming:'upcoming',search:'search',filters:'filters',completed:'report',projects:'folder',calendar:'calgrid',reminders:'bell',exams:'target',books:'book'}[v]||'list')}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -937,7 +975,8 @@ function baseTasks(v){const[k,id]=v.split(':');const all=S.tasks;
   switch(k){case'inbox':return all.filter(t=>t.project==='inbox');
   case'today':return all.filter(t=>t.due&&t.due<=T());
   case'upcoming':return all.filter(t=>t.due);
-  case'p':return all.filter(t=>t.project===id);
+  case'p':{const ids=isFolder(id)?[id,...descendants(id)]:[id];return all.filter(t=>ids.includes(t.project))}
+  case'b':return all.filter(t=>t.book===id);
   case'l':return all.filter(t=>t.labels.includes(id));
   case'f':return all.filter(t=>filterMatch(t,filt(id)));}return[]}
 function viewTasks(v){const d=disp(v);let L=baseTasks(v).filter(t=>d.showDone||open(t));
@@ -951,7 +990,7 @@ function sortTasks(L,d){const key={manual:t=>t.order,date:t=>(t.due||'9999')+(t.
   if(d.dir==='desc')r.reverse();
   return r.sort((a,b)=>a.done-b.done)}
 function groupTasks(v,L){const d=disp(v);let g=d.group;const[k,id]=v.split(':');
-  if(g==='default')g=k==='p'?'section':v==='today'?'today':v==='upcoming'?'date':'none';
+  if(g==='default')g=k==='p'?(isFolder(id)?'project':'section'):v==='today'?'today':v==='upcoming'?'date':'none';
   const out=[];
   if(g==='none')return[{key:'all',title:'',tasks:L,add:{}}];
   if(g==='today'){const late=L.filter(t=>t.due<T()&&open(t)),now=L.filter(t=>!late.includes(t));
@@ -971,8 +1010,8 @@ function groupTasks(v,L){const d=disp(v);let g=d.group;const[k,id]=v.split(':');
   return[{key:'all',title:'',tasks:L,add:{}}]}
 
 /* ================= rendering: sidebar ================= */
-function counts(){const o=S.tasks.filter(open);return{inbox:o.filter(t=>t.project==='inbox').length,today:o.filter(t=>t.due&&t.due<=T()).length,
-  proj:id=>o.filter(t=>t.project===id).length,label:id=>o.filter(t=>t.labels.includes(id)).length,filter:id=>o.filter(t=>filterMatch(t,filt(id))).length}}
+function counts(){const o=S.tasks.filter(open);return{rem:S.reminders.filter(r=>!r.done&&r.date<=T()).length,inbox:o.filter(t=>t.project==='inbox').length,today:o.filter(t=>t.due&&t.due<=T()).length,
+  proj:id=>{const ids=isFolder(id)?[id,...descendants(id)]:[id];return o.filter(t=>ids.includes(t.project)).length},label:id=>o.filter(t=>t.labels.includes(id)).length,filter:id=>o.filter(t=>filterMatch(t,filt(id))).length}}
 function navItem(v,lab,n,extra='',d=0){return`<div class="nav-i ${view===v?'on':''}" style="--d:${d}" role="button" tabindex="0" data-a="go" data-v="${v}"><span class="ico">${viewIcon(v)}</span><span class="lab">${esc(lab)}</span>${n?`<span class="n">${n}</span>`:''}${extra}</div>`}
 function projTree(parent,depth,c){return S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).map(p=>{
   const kids=S.projects.some(x=>x.parent===p.id&&!x.archived),closed=S.ui.col[p.id];
@@ -988,13 +1027,15 @@ function renderSide(){const c=counts();
     <button class="ibtn" data-a="toggleSide" aria-label="Close sidebar">${ic('side')}</button></div>
   <div class="side-scroll">
     <button class="add-task-side" data-a="quickAdd"><span class="plus">${ic('plus')}</span>Add task</button>
-    ${navItem('search','Search')}${navItem('inbox','Inbox',c.inbox||'')}${navItem('today','Today',c.today||'')}
+    ${navItem('search','Search')}${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
     ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}
+    <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
-    <div class="sec-h"><span data-a="go" data-v="projects">My Projects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add project">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
-    ${S.ui.projOpen?projTree(null,0,c):''}
+    <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
+    ${S.ui.projOpen?projTree(null,0,c)+(c.inbox?navItem('inbox','No subject',c.inbox):''):''}
+    ${S.ui.projOpen&&!S.projects.some(x=>!x.archived)?`<div class="nav-i" role="button" tabindex="0" data-a="upscPreset"><span class="ico">${ic('plus')}</span><span class="lab">Add UPSC subjects</span></div>`:''}
     <div class="side-foot">
-      <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">${ic('edit')}</span><span class="lab">Manage projects</span></div>
+      <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">${ic('edit')}</span><span class="lab">Manage subjects</span></div>
       <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">${ic('gear')}</span><span class="lab">Settings</span></div>
     </div>
   </div>`}
@@ -1007,6 +1048,7 @@ function taskRow(t,opts={}){
     t.deadline?`<span class="${t.deadline<T()?'due-late':''}">${ic('target')}${fmtShort(t.deadline)}</span>`:'',
     t.subs.length?`<span>${ic('sub')}${sd}/${t.subs.length}</span>`:'',
     ...t.labels.map(l=>label(l)).filter(Boolean).map(l=>`<span class="lbl" style="color:${l.color}">${ic('tag')}${esc(l.name)}</span>`),
+    t.book&&book(t.book)?`<span>${ic('book')}${esc(book(t.book).name)}</span>`:'',
     !opts.hideProj&&p?`<span class="tproj">${esc(p.name)}${t.section&&sect(t.section)?' / '+esc(sect(t.section).name):''} <span style="color:${p.color}">#</span></span>`:''
   ].join('');
   const cls=opts.card?'card':'task';
@@ -1025,7 +1067,7 @@ const ART={
 };
 const empty=(art,b,p,act='')=>`<div class="empty">${ART[art]}<b>${b}</b><p>${p}</p>${act}</div>`;
 
-function listHTML(v,L){const d=disp(v);const groups=groupTasks(v,L);const isProj=v.startsWith('p:');
+function listHTML(v,L){const d=disp(v);const groups=groupTasks(v,L);const isProj=v.startsWith('p:')&&!isFolder(v.slice(2));
   if(!L.length&&!isProj){
     if(v==='today')return empty('today','Get a clear view of the day ahead','Tasks due today will show up here. Tap + to add one.',addRow({due:T()}));
     return empty('project','Start small (or dream big)…','Add a task with the + button.',addRow(addDefaults(v)));}
@@ -1042,7 +1084,7 @@ function listHTML(v,L){const d=disp(v);const groups=groupTasks(v,L);const isProj
   }
   if(isProj&&!L.length&&!S.sections.some(s=>s.project===v.slice(2)))h+=empty('project','Start small (or dream big)…','Add your first task, or split this project into sections.');
   return h}
-function addDefaults(v){const[k,id]=v.split(':');if(k==='p')return{project:id};if(k==='l')return{labels:[id]};if(v==='today')return{due:T()};return{}}
+function addDefaults(v){const[k,id]=v.split(':');if(k==='b')return{book:id};if(k==='p')return isFolder(id)?{}:{project:id};if(k==='l')return{labels:[id]};if(v==='today')return{due:T()};return{}}
 
 function boardHTML(v,L){const d=disp(v);let groups;
   if(v==='upcoming'){const st=upStart();groups=[];for(let i=0;i<7;i++){const x=addD(st,i),dd=pd(x);if(x<T())continue;groups.push({key:x,title:`${dd.getDate()} ${MON[dd.getMonth()]} · ${DAYS[dd.getDay()].slice(0,3)}`,tasks:L.filter(t=>t.due===x),add:{due:x},type:'date'})}}
@@ -1112,7 +1154,7 @@ async function fillArc(){
     byDay[k].map(e=>{const p=proj(e.project);return`<div class="logrow"><span class="ok">${ic('check')}</span><div style="flex:1;min-width:0"><div>${esc(e.title)}</div><div class="meta">${new Date(e.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}${p?` · <span style="color:${p.color}">#</span> ${esc(p.name)}`:''}</div></div></div>`}).join('')}).join('')+
     (all.length>log.length?`<p class="muted" style="font-size:12px">Showing the latest ${log.length} of ${all.length} items.</p>`:'')}
 function searchHTML(){
-  let h=`<div class="sbox">${ic('search')}<input id="q" placeholder="Search tasks, projects and labels" value="${esc(q)}" autocomplete="off"></div>`;
+  let h=`<div class="sbox">${ic('search')}<input id="q" placeholder="Search tasks, subjects and labels" value="${esc(q)}" autocomplete="off"></div>`;
   if(!q){h+=`<div class="hdr2">Recently viewed</div>`+S.recent.filter(validView).map(v=>`<div class="row-i" data-a="go" data-v="${v}"><span class="ico" style="display:grid;width:20px;place-items:center;color:var(--muted)">${viewIcon(v)}</span><span class="lab">${esc(viewName(v))}</span></div>`).join('');return h}
   const k=q.toLowerCase();
   const ts=S.tasks.filter(t=>(t.title+' '+t.desc+' '+t.subs.map(s=>s.title).join(' ')).toLowerCase().includes(k)).sort((a,b)=>a.done-b.done);
@@ -1127,17 +1169,168 @@ function filtersHTML(){const c=counts();
   <div class="hdr2" style="margin-top:14px">Labels <button class="ibtn" data-a="editLabel" aria-label="Add label">${ic('plus')}</button></div>
   ${S.labels.map(l=>`<div class="row-i" data-a="go" data-v="l:${l.id}">${viewIcon('l:'+l.id)}<span class="lab">${esc(l.name)}</span><span class="n">${c.label(l.id)||''}</span>${l.fav?`<span style="color:var(--orange);display:grid">${ic('star')}</span>`:''}<button class="ibtn" data-a="editLabel" data-id="${l.id}" aria-label="Edit label">${ic('edit')}</button></div>`).join('')||'<p class="muted">Type @name while adding a task to create a label.</p>'}`}
 function projectsHTML(){const c=counts();
-  const tree=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).map(p=>`<div class="row-i" style="padding-left:${4+d*20}px" data-a="go" data-v="p:${p.id}">${viewIcon('p:'+p.id)}<span class="lab">${esc(p.name)}</span><span class="n">${c.proj(p.id)||''}</span><button class="ibtn" data-a="editProject" data-id="${p.id}" aria-label="Edit project">${ic('edit')}</button></div>`+tree(p.id,d+1)).join('');
+  const tree=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).map(p=>`<div class="row-i" style="padding-left:${4+d*20}px" data-a="go" data-v="p:${p.id}">${viewIcon('p:'+p.id)}<span class="lab">${esc(p.name)}</span><span class="n">${c.proj(p.id)||''}</span><button class="ibtn" data-a="editProject" data-id="${p.id}" aria-label="Edit">${ic('edit')}</button></div>`+tree(p.id,d+1)).join('');
   const arch=S.projects.filter(p=>p.archived);
-  return`<div class="hdr2">Active projects <button class="pill" data-a="editProject">${ic('plus')} Add project</button></div>${tree(null,0)||'<p class="muted">No projects yet.</p>'}
+  return`<div class="hdr2">Subjects <span style="display:flex;gap:6px"><button class="pill" data-a="editFolder">${ic('folder')} Add folder</button><button class="pill" data-a="editProject">${ic('plus')} Add subject</button></span></div>${tree(null,0)||`<p class="muted">No subjects yet.</p><button class="pill" data-a="upscPreset">${ic('plus')} Add UPSC subjects (GS1 to GS4 folders)</button>`}
   ${arch.length?`<div class="hdr2" style="margin-top:14px">Archived</div>${arch.map(p=>`<div class="row-i"><span class="hash" style="color:${p.color}">#</span><span class="lab muted">${esc(p.name)}</span><button class="pill" data-a="unarchive" data-id="${p.id}">Unarchive</button></div>`).join('')}`:''}`}
+function upscPreset(){snap();
+  const mk=(name,color,parent=null,folder=false)=>{const x={id:uid(),name,color,parent,fav:false,archived:false,order:S.projects.length,folder};S.projects.push(x);return x.id};
+  const g1=mk('GS1','#ff9933',null,true),g2=mk('GS2','#4073ff',null,true),g3=mk('GS3','#299438',null,true);mk('GS4','#884dff',null,true);
+  mk('History','#ff9933',g1);mk('Geography','#14aaf5',g1);mk('Art and culture','#eb96eb',g1);
+  mk('Polity','#4073ff',g2);mk('Economics','#299438',g3);mk('Environment','#7ecc49',g3);
+  commit('UPSC subjects added',true);go('projects')}
+
+/* ================= books ================= */
+function booksHTML(){
+  const rows=S.books.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>{const ts=S.tasks.filter(t=>t.book===b.id),dn=ts.filter(t=>t.done).length,sj=b.subject&&proj(b.subject)?proj(b.subject).name:'';
+    return`<div class="row-i" data-a="go" data-v="b:${b.id}"><span class="ico" style="display:grid;color:var(--muted)">${ic('book')}</span><span class="lab">${esc(b.name)}<small class="muted" style="display:block;font-size:12px">${[b.author,sj].filter(Boolean).map(esc).join(' · ')}</small></span><span class="n">${ts.length?dn+'/'+ts.length+' done':''}</span><button class="ibtn" data-a="editBook" data-id="${b.id}" aria-label="Edit book">${ic('edit')}</button></div>`}).join('');
+  return`<div class="hdr2">Books <button class="pill" data-a="editBook">${ic('plus')} Add book</button></div>`+(rows||empty('project','No books yet','Add the books you study, then link tasks to a book from the task window.',`<button class="addrow" data-a="editBook"><span class="plus">${ic('plus')}</span>Add book</button>`))}
+function editBook(id){const b=id?book(id):{name:'',author:'',subject:'',notes:''};
+  const subs=S.projects.filter(x=>!x.archived&&!x.folder);
+  showModal(`<form id="bf"><div class="mh"><b>${id?'Edit book':'Add book'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <div class="fld"><label for="bfN">Book name</label><input class="inp" id="bfN" value="${esc(b.name)}" maxlength="140" autocomplete="off"></div>
+    <div class="fld"><label for="bfA">Author or publisher (optional)</label><input class="inp" id="bfA" value="${esc(b.author||'')}" maxlength="140" autocomplete="off"></div>
+    <div class="fld"><label for="bfS">Subject (optional)</label><select class="inp" id="bfS"><option value="">No subject</option>${subs.map(x=>`<option value="${x.id}" ${x.id===b.subject?'selected':''}>${esc(projPath(x.id))}</option>`).join('')}</select></div>
+    <div class="fld"><label for="bfT">Notes (optional)</label><textarea class="inp" id="bfT" rows="3">${esc(b.notes||'')}</textarea></div></div>
+    <div class="mf">${id?`<button type="button" class="btn danger" id="bfDel" style="margin-right:auto">Delete</button>`:''}<button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">${id?'Save':'Add'}</button></div></form>`);
+  setTimeout(()=>$('bfN').focus(),0);
+  $('bf').onsubmit=e=>{e.preventDefault();const n=$('bfN').value.trim();if(!n){$('bfN').focus();return}snap();
+    const o={name:n,author:$('bfA').value.trim(),subject:$('bfS').value||null,notes:$('bfT').value.trim()};
+    if(id)Object.assign(b,o);else S.books.push(Object.assign({id:uid(),created:Date.now()},o));
+    closeModal();commit(id?'Book saved':'Book added',true)};
+  if(id)$('bfDel').onclick=e=>{const x=e.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}
+    snap();S.books=S.books.filter(y=>y.id!==id);S.tasks.forEach(t=>{if(t.book===id)t.book=null});closeModal();if(view==='b:'+id)go('books');commit('Book deleted',true)}}
+function bookPop(anchor,cur,cb){openPop(anchor,(el,close)=>{
+  const items=[{id:'',name:'No book'},...S.books.map(b=>({id:b.id,name:b.name}))];
+  el.innerHTML=`<div class="ll">${items.map(i=>`<button class="pi" data-b="${i.id}">${ic('book')}<span class="lab">${esc(i.name)}</span>${(cur||'')===i.id?'<span class="r">✓</span>':''}</button>`).join('')}</div>`+(S.books.length?'':`<div class="muted" style="padding:8px;font-size:12px">Add books in Manage Book.</div>`);
+  el.addEventListener('click',e=>{const b=e.target.closest('[data-b]');if(!b)return;cb(b.dataset.b||null);close()})})}
+
+/* ================= reminders ================= */
+const REPEATS=[['none','Does not repeat'],['daily','Daily'],['weekly','Weekly'],['monthly','Monthly'],['yearly','Yearly']];
+const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+function nextRemDate(r){const d=pd(r.date);
+  if(r.repeat==='daily')d.setDate(d.getDate()+1);else if(r.repeat==='weekly')d.setDate(d.getDate()+7);
+  else if(r.repeat==='monthly'){const day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+1);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()))}
+  else if(r.repeat==='yearly')d.setFullYear(d.getFullYear()+1);
+  return iso(d)}
+function remRow(r){const dd=pd(r.date),late=!r.done&&(r.date<T()||(r.date===T()&&r.time&&r.time<nowHM()));
+  return`<li class="task ${r.done?'done':''}" data-a="editRem" data-id="${r.id}"><button class="chk" style="--pc:var(--accent)" data-a="remToggle" data-id="${r.id}" aria-label="${r.done?'Mark not done':'Mark done'}">${ic('check')}</button>
+    <div class="tbody"><div class="tt">${esc(r.title)}</div><div class="tm"><span class="${late?'due-late':''}">${ic('cal')}${dd.getDate()} ${MON[dd.getMonth()]}${r.time?' · '+fmtTime(r.time):''}</span>${r.repeat&&r.repeat!=='none'?`<span>${ic('repeat')}${REPEATS.find(x=>x[0]===r.repeat)[1]}</span>`:''}${r.notes?`<span>${esc(r.notes.split('\n')[0])}</span>`:''}</div></div>
+    <div class="tacts"><button class="ibtn" data-a="remDel" data-id="${r.id}" aria-label="Delete reminder">${ic('trash')}</button></div></li>`}
+function remindersHTML(){
+  const key=r=>r.date+(r.time||'09:00');
+  const op=S.reminders.filter(r=>!r.done).sort((a,b)=>key(a).localeCompare(key(b))),dn=S.reminders.filter(r=>r.done).sort((a,b)=>(b.doneAt||0)-(a.doneAt||0));
+  const t0=T(),t1=addD(t0,1);
+  const groups=[['Overdue',op.filter(r=>r.date<t0),true],['Today',op.filter(r=>r.date===t0)],['Tomorrow',op.filter(r=>r.date===t1)]];
+  const later=op.filter(r=>r.date>t1);[...new Set(later.map(r=>r.date))].forEach(x=>{const d=pd(x);groups.push([`${DAYS[d.getDay()].slice(0,3)}, ${d.getDate()} ${MON[d.getMonth()]}`,later.filter(r=>r.date===x)])});
+  const perm=('Notification' in window)?Notification.permission:'unsupported';
+  let h=`<div class="hdr2">Reminders <button class="pill" data-a="editRem">${ic('plus')} Add reminder</button></div>`;
+  if(perm==='default')h+=`<div class="banner"><b>Get alerts.</b> Allow notifications so reminders can pop up while TaskFlow is open.<button data-a="remPerm">Turn on alerts</button></div>`;
+  else if(perm==='denied')h+=`<div class="banner">Notifications are blocked in this browser. Reminders still appear inside TaskFlow while it is open.</div>`;
+  groups.forEach(([t,L,late])=>{if(L.length)h+=`<div class="grp"><div class="grp-h ${late?'late':''}">${esc(t)} <span class="c">${L.length}</span></div><ul class="tl">${L.map(remRow).join('')}</ul></div>`});
+  if(!op.length)h+=empty('today','No reminders','Add a reminder with a date and time. It alerts you while TaskFlow is open.',`<button class="addrow" data-a="editRem"><span class="plus">${ic('plus')}</span>Add reminder</button>`);
+  if(dn.length)h+=`<div class="grp"><div class="grp-h">Completed <span class="c">${dn.length}</span><span class="sp"></span><button class="link" data-a="remClear">Clear</button></div><ul class="tl">${dn.slice(0,20).map(remRow).join('')}</ul></div>`;
+  return h}
+function editRem(id,defDate){const r=id?S.reminders.find(x=>x.id===id):{title:'',date:defDate||T(),time:'',repeat:'none',notes:''};if(!r)return;
+  showModal(`<form id="rf"><div class="mh"><b>${id?'Edit reminder':'Add reminder'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <div class="fld"><label for="rmN">Remind me to</label><input class="inp" id="rmN" value="${esc(r.title)}" maxlength="200" autocomplete="off"></div>
+    <div class="fld" style="display:flex;gap:10px"><div style="flex:1"><label for="rmD">Date</label><input class="inp" type="date" id="rmD" value="${r.date}"></div><div style="flex:1"><label for="rmT">Time</label><input class="inp" type="time" id="rmT" value="${r.time||''}"></div></div>
+    <div class="fld"><label for="rmR">Repeat</label><select class="inp" id="rmR">${REPEATS.map(([k,n])=>`<option value="${k}" ${(r.repeat||'none')===k?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="fld"><label for="rmO">Notes (optional)</label><textarea class="inp" id="rmO" rows="2">${esc(r.notes||'')}</textarea></div></div>
+    <div class="mf">${id?`<button type="button" class="btn danger" id="rmDel" style="margin-right:auto">Delete</button>`:''}<button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">${id?'Save':'Add'}</button></div></form>`);
+  setTimeout(()=>$('rmN').focus(),0);
+  $('rf').onsubmit=e=>{e.preventDefault();const n=$('rmN').value.trim();if(!n){$('rmN').focus();return}snap();
+    const o={title:n,date:$('rmD').value||T(),time:$('rmT').value||null,repeat:$('rmR').value,notes:$('rmO').value.trim()};
+    if(id){Object.assign(r,o)}else S.reminders.push(Object.assign({id:uid(),done:false,created:Date.now()},o));
+    if(S.ui.remFired)delete S.ui.remFired[id||''];
+    if(o.time&&'Notification' in window&&Notification.permission==='default'){try{Notification.requestPermission().then(()=>{if(view==='reminders')render()})}catch(_){}}
+    closeModal();commit(id?'Reminder saved':'Reminder added',true)};
+  if(id)$('rmDel').onclick=()=>{snap();S.reminders=S.reminders.filter(x=>x.id!==id);closeModal();commit('Reminder deleted',true)}}
+function toggleRem(id){const r=S.reminders.find(x=>x.id===id);if(!r)return;snap();
+  if(!r.done&&r.repeat&&r.repeat!=='none'){let g=0;do{r.date=nextRemDate(r)}while(r.date<=T()&&++g<800);if(S.ui.remFired)delete S.ui.remFired[id];commit('Done. Next on '+fmtShort(r.date),true);return}
+  r.done=!r.done;r.doneAt=r.done?Date.now():null;commit(r.done?'Reminder done':'Reminder reopened',true)}
+/* alerts: work while TaskFlow is open (a web page cannot ring when it is closed) */
+const remKey=r=>r.date+' '+(r.time||'09:00');
+function remBox(){let b=$('remBox');if(!b){b=document.createElement('div');b.id='remBox';b.setAttribute('role','alert');document.body.appendChild(b)}return b}
+function remCard(title,sub,btns,onBtn){const el=document.createElement('div');el.className='remcard';
+  el.innerHTML=`<div class="rc-i">${ic('bell')}</div><div class="rc-b"><b>${esc(title)}</b><small>${esc(sub)}</small></div><div class="rc-a">${btns.map(([k,t])=>`<button data-r="${k}">${t}</button>`).join('')}<button data-r="x" aria-label="Dismiss">${ic('x')}</button></div>`;
+  el.onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;onBtn(b.dataset.r);el.remove()};remBox().appendChild(el)}
+function showRemAlert(r){
+  try{if('Notification' in window&&Notification.permission==='granted'&&document.hidden)new Notification('Reminder',{body:r.title+(r.time?' · '+fmtTime(r.time):''),tag:'rem-'+r.id})}catch(_){}
+  remCard(r.title,(r.time?fmtTime(r.time):'Today')+(r.notes?' · '+r.notes.split('\n')[0]:''),[['done','Done'],['snz','Snooze 10 min']],k=>{
+    if(k==='done')toggleRem(r.id);else if(k==='snz'){S.ui.remSnooze=S.ui.remSnooze||{};S.ui.remSnooze[r.id]=Date.now()+10*60000;saveLocal()}})}
+function checkReminders(){
+  if(!S||!Array.isArray(S.reminders)||!S.reminders.length)return;
+  const u=S.ui;u.remFired=u.remFired||{};u.remSnooze=u.remSnooze||{};
+  const d=new Date(),nk=iso(d)+' '+pad(d.getHours())+':'+pad(d.getMinutes()),now=Date.now();let ch=false,missed=0;
+  S.reminders.forEach(r=>{if(r.done)return;const k=remKey(r),sn=u.remSnooze[r.id];
+    if(sn){if(now>=sn){delete u.remSnooze[r.id];showRemAlert(r);ch=true}return}
+    if(k>nk||u.remFired[r.id]===k)return;
+    u.remFired[r.id]=k;ch=true;
+    if(now-new Date(r.date+'T'+(r.time||'09:00')+':00').getTime()<=15*60000)showRemAlert(r);else missed++});
+  if(missed&&u.remSummaryDay!==T()){u.remSummaryDay=T();remCard(`${missed} reminder${missed===1?' is':'s are'} overdue`,'Open Event & Reminder to see them.',[['go','View']],k=>{if(k==='go')go('reminders')});ch=true}
+  if(ch)saveLocal()}
+
+/* ================= exam plan ================= */
+function examProgress(e){const ids=new Set();(e.subjects||[]).forEach(p=>{ids.add(p);descendants(p).forEach(x=>ids.add(x))});const ts=S.tasks.filter(t=>ids.has(t.project));return{total:ts.length,done:ts.filter(t=>t.done).length}}
+function examsHTML(){
+  const L=S.exams.slice().sort((a,b)=>a.date.localeCompare(b.date)),t0=T();
+  const card=e=>{const n=diffD(e.date,t0),pr=examProgress(e),pc=pr.total?Math.round(pr.done/pr.total*100):0,d=pd(e.date);
+    const cd=n>0?`<b>${n}</b>day${n===1?'':'s'} left`:n===0?'<b>Today</b>':`${-n} day${n===-1?'':'s'} ago`;
+    const subs=(e.subjects||[]).map(p=>proj(p)).filter(Boolean).map(p=>`<span class="tag"><span style="color:${p.color}">●</span>${esc(p.name)}</span>`).join('');
+    return`<div class="exc ${n<0?'past':''}" data-a="editExam" data-id="${e.id}"><div class="exh"><div><div class="ext">${esc(e.name)}</div><div class="exd">${ic('cal')}${DAYS[d.getDay()].slice(0,3)}, ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()}</div></div><div class="exn">${cd}</div></div>
+      ${(e.subjects||[]).length?`<div class="exb"><i style="width:${pc}%"></i></div><div class="exs">${pr.done} of ${pr.total} task${pr.total===1?'':'s'} done (${pc}%)</div><div class="tagrow">${subs}</div>`:`<div class="exs">Choose subjects to see your progress.</div>`}
+      ${e.notes?`<div class="exs">${esc(e.notes.split('\n')[0])}</div>`:''}</div>`};
+  let h=`<div class="hdr2">Exams <button class="pill" data-a="editExam">${ic('plus')} Add exam</button></div>`;
+  if(!L.length)return h+empty('project','No exams planned','Add an exam with its date to see the countdown and how much of its syllabus you have finished.',`<button class="addrow" data-a="editExam"><span class="plus">${ic('plus')}</span>Add exam</button>`);
+  const up=L.filter(e=>e.date>=t0),past=L.filter(e=>e.date<t0);
+  h+=up.map(card).join('');if(past.length)h+=`<div class="hdr2" style="margin-top:14px">Past exams</div>`+past.map(card).join('');return h}
+function editExam(id){const e=id?S.exams.find(x=>x.id===id):{name:'',date:'',subjects:[],notes:''};if(!e)return;
+  const rows=[];const walk=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).forEach(p=>{rows.push({p,d});walk(p.id,d+1)});walk(null,0);
+  showModal(`<form id="ef"><div class="mh"><b>${id?'Edit exam':'Add exam'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <div class="fld"><label for="efN">Exam name</label><input class="inp" id="efN" value="${esc(e.name)}" maxlength="140" placeholder="For example, UPSC Prelims" autocomplete="off"></div>
+    <div class="fld"><label for="efD">Exam date</label><input class="inp" type="date" id="efD" value="${e.date}"></div>
+    <div class="fld"><span class="l">Subjects in the syllabus (tasks in them count as progress)</span><div class="checks">${rows.length?rows.map(({p,d})=>`<label class="ck" style="padding-left:${8+d*16}px"><input type="checkbox" name="efS" value="${p.id}" ${(e.subjects||[]).includes(p.id)?'checked':''}>${esc(p.name)}</label>`).join(''):'<span class="muted" style="font-size:13px">Add subjects first.</span>'}</div></div>
+    <div class="fld"><label for="efT">Notes (optional)</label><textarea class="inp" id="efT" rows="2">${esc(e.notes||'')}</textarea></div></div>
+    <div class="mf">${id?`<button type="button" class="btn danger" id="efDel" style="margin-right:auto">Delete</button>`:''}<button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">${id?'Save':'Add'}</button></div></form>`);
+  setTimeout(()=>$('efN').focus(),0);
+  $('ef').onsubmit=ev=>{ev.preventDefault();const n=$('efN').value.trim();if(!n){$('efN').focus();return}const dt=$('efD').value;if(!dt){$('efD').focus();return}snap();
+    const o={name:n,date:dt,subjects:[...document.querySelectorAll('input[name=efS]:checked')].map(x=>x.value),notes:$('efT').value.trim()};
+    if(id)Object.assign(e,o);else S.exams.push(Object.assign({id:uid(),created:Date.now()},o));
+    closeModal();commit(id?'Exam saved':'Exam added',true)};
+  if(id)$('efDel').onclick=ev=>{const x=ev.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}snap();S.exams=S.exams.filter(y=>y.id!==id);closeModal();commit('Exam deleted',true)}}
+
+/* ================= task calendar ================= */
+function taskCalHTML(){
+  const m=S.ui.calMonth||T().slice(0,8)+'01',first=pd(m),ws=S.settings.weekStart,sel=S.ui.calSel||T();
+  const start=new Date(first);start.setDate(1-((first.getDay()-ws+7)%7));
+  const by={},slot=x=>by[x]||(by[x]={t:[],r:[],e:[]});
+  S.tasks.forEach(t=>{if(t.due)slot(t.due).t.push(t)});S.reminders.forEach(r=>{if(!r.done)slot(r.date).r.push(r)});S.exams.forEach(e=>slot(e.date).e.push(e));
+  let cells='';
+  for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const x=iso(d),o=by[x]||{t:[],r:[],e:[]},na=o.t.filter(open).length;
+    cells+=`<button class="cell tc ${d.getMonth()!==first.getMonth()?'out':''} ${x===T()?'today':''} ${x===sel?'sel':''}" data-a="calDay" data-d="${x}" aria-label="${DAYS[d.getDay()]} ${d.getDate()} ${MONF[d.getMonth()]}${o.t.length?', '+o.t.length+' task'+(o.t.length===1?'':'s'):''}">
+      <span class="dn">${d.getDate()}</span>${o.t.length?`<span class="cnt">${na||'✓'}</span>`:''}
+      <span class="dots">${o.e.length?'<i class="ex"></i>':''}${o.r.length?'<i class="rm"></i>':''}${o.t.slice(0,4).map(t=>`<i style="--pc:${t.done?'var(--faint)':PRI[t.priority]}"></i>`).join('')}</span>
+      <span class="cchips">${o.e.slice(0,1).map(e=>`<span class="chip ex">${esc(e.name)}</span>`).join('')}${o.t.slice(0,2).map(t=>`<span class="chip ${t.done?'done':''}" style="--pc:${PRI[t.priority]}">${esc(t.title)}</span>`).join('')}${o.t.length>2?`<span class="muted" style="font-size:11px">+${o.t.length-2} more</span>`:''}</span></button>`;
+    if(i===34&&new Date(start.getTime()+35*864e5).getMonth()!==first.getMonth())break}
+  const dh=[...Array(7)].map((_,i)=>`<div class="dh">${DAYS[(i+ws)%7].slice(0,3)}</div>`).join('');
+  const o=by[sel]||{t:[],r:[],e:[]},sd=pd(sel),n=diffD(sel,T());
+  const panel=`<div class="dpanel"><div class="day-h">${DAYS[sd.getDay()]}, ${sd.getDate()} ${MONF[sd.getMonth()]} <small>${n===0?'· Today':n===1?'· Tomorrow':n===-1?'· Yesterday':''}</small><span class="sp"></span></div>
+    ${o.e.map(e=>`<div class="row-i" data-a="go" data-v="exams"><span class="ico" style="display:grid;color:var(--p1)">${ic('target')}</span><span class="lab"><b>${esc(e.name)}</b> <span class="muted">exam day</span></span></div>`).join('')}
+    ${o.t.length?`<ul class="tl">${sortTasks(o.t,{sort:'date',dir:'asc'}).map(t=>taskRow(t)).join('')}</ul>`:`<p class="muted" style="margin:10px 0">No tasks on this day.</p>`}
+    ${addRow({due:sel})}
+    ${o.r.length?`<div class="grp-h" style="margin-top:12px">Reminders</div><ul class="tl">${o.r.map(remRow).join('')}</ul>`:''}
+    <button class="addrow" data-a="editRem" data-d="${sel}"><span class="plus">${ic('plus')}</span>Add reminder</button></div>`;
+  return`<div class="strip-h"><span class="mon">${MONF[first.getMonth()]} ${first.getFullYear()}</span>
+    <button class="ibtn" data-a="calNav" data-n="-1" aria-label="Previous month">${ic('chevL')}</button><button class="pill" data-a="calNav" data-n="0">Today</button><button class="ibtn" data-a="calNav" data-n="1" aria-label="Next month">${ic('chev')}</button></div>
+    <div class="calwrap"><div class="cal tcal">${dh}${cells}</div></div>${panel}`}
 
 /* ================= main render ================= */
 function render(){
   renderSide();
   $('sideBtn').innerHTML=ic('side');$('fab').innerHTML=ic('plus');
   const v=view,[k,id]=v.split(':'),d=disp(v);
-  const listy=['inbox','today','upcoming'].includes(v)||['p','l','f'].includes(k);
+  const listy=['inbox','today','upcoming'].includes(v)||['p','l','f','b'].includes(k);
   let acts='';
   if(listy)acts+=`<button class="pill" data-a="display">${ic('sliders')}<span>Display</span></button>`;
   if(k==='p')acts+=`<button class="ibtn" data-a="projMenu" aria-label="Project options">${ic('more')}</button>`;
@@ -1152,12 +1345,16 @@ function render(){
     else if(v==='upcoming')body=upcomingHTML(L);
     else body=listHTML(v,L);
     if(['inbox','today'].includes(v)||k==='p')body=sampleBanner()+body;}
-  else if(v==='completed'){body=completedHTML();sub=`<div class="subline">Your activity across all projects</div>`}
+  else if(v==='completed'){body=completedHTML();sub=`<div class="subline">Your activity across all subjects</div>`}
+  else if(v==='calendar')body=taskCalHTML();
+  else if(v==='reminders')body=remindersHTML();
+  else if(v==='exams')body=examsHTML();
+  else if(v==='books')body=booksHTML();
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
-  const wide=d.layout!=='list'&&listy;
-  const dot=k==='p'?`<span style="color:${proj(id)?.color};font-size:22px">#</span>`:'';
+  const wide=(d.layout!=='list'&&listy)||v==='calendar';
+  const dot=k==='p'&&!isFolder(id)?`<span style="color:${proj(id)?.color};font-size:22px">#</span>`:'';
   $('content').innerHTML=`<div class="wrap ${wide?'wide':''}"><h1>${dot}${esc(title)}</h1>${sub}${body}</div>`;
   const qi=$('q');if(qi&&document.activeElement!==qi&&v==='search'){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
   if(detailId)renderDetail();
@@ -1237,11 +1434,11 @@ function labelPop(anchor,cur,cb){let sel=[...cur];openPop(anchor,(el)=>{
   el.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='lpIn'){e.preventDefault();const v=e.target.value.trim();if(!v)return;const id=labelId(v);save();if(!sel.includes(id))sel.push(id);cb(sel);e.target.value='';draw()}});
 })}
 function projPop(anchor,cur,cb){openPop(anchor,(el,close)=>{
-  const items=[];const walk=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).forEach(p=>{items.push({p:p.id,d,name:p.name,color:p.color});
+  const items=[];const walk=(parent,d,pre='')=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).forEach(p=>{if(p.folder){walk(p.id,d,p.name+' / ');return}items.push({p:p.id,d,name:pre+p.name,color:p.color});
     S.sections.filter(s=>s.project===p.id).sort((a,b)=>a.order-b.order).forEach(s=>items.push({p:p.id,s:s.id,d:d+1,name:s.name,sec:true}));walk(p.id,d+1)});
-  items.push({p:'inbox',d:0,name:'Inbox',inbox:true});walk(null,0);
+  items.push({p:'inbox',d:0,name:'No subject',inbox:true});walk(null,0);
   const draw=(f='')=>{el.querySelector('.ll').innerHTML=items.filter(i=>i.name.toLowerCase().includes(f.toLowerCase())).map(i=>`<button class="pi" data-p="${i.p}" data-s="${i.s||''}" style="padding-left:${8+i.d*14}px">${i.inbox?ic('inbox'):i.sec?`<span style="color:var(--faint);width:16px;text-align:center">▸</span>`:`<span class="hash" style="color:${i.color};width:16px">#</span>`}<span class="lab">${esc(i.name)}</span>${cur.project===i.p&&(cur.section||'')===(i.s||'')?'<span class="r">✓</span>':''}</button>`).join('');placePop()};
-  el.innerHTML=`<input class="pin" placeholder="Type a project name"><div class="ll"></div>`;draw();
+  el.innerHTML=`<input class="pin" placeholder="Type a subject name"><div class="ll"></div>`;draw();
   el.querySelector('.pin').oninput=e=>draw(e.target.value);
   el.addEventListener('click',e=>{const b=e.target.closest('[data-p]');if(!b)return;cb(b.dataset.p,b.dataset.s||null);close()})})}
 
@@ -1255,7 +1452,7 @@ function closeModal(){closePop();$('modalRoot').innerHTML='';detailId=null}
 /* quick add */
 let QA=null;
 function quickAdd(def={}){
-  QA=Object.assign({project:view.startsWith('p:')?view.slice(2):'inbox',section:null,due:null,time:null,recur:null,deadline:null,priority:4,labels:[]},def);
+  QA=Object.assign({project:view.startsWith('p:')&&!isFolder(view.slice(2))?view.slice(2):'inbox',section:null,due:null,time:null,recur:null,deadline:null,priority:4,labels:[]},def);
   showModal(`<form id="qaForm"><div class="qa"><input class="t" id="qaT" placeholder="Task name" autocomplete="off">
     <textarea class="d" id="qaD" rows="1" placeholder="Description"></textarea><div class="parsed" id="qaP"></div><div class="chips" id="qaC"></div></div>
     <div class="mf" style="justify-content:space-between"><button type="button" class="cbtn set" id="qaProj"></button><span style="display:flex;gap:8px"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri" id="qaOk" disabled>Add task</button></span></div></form>`);
@@ -1265,9 +1462,9 @@ function quickAdd(def={}){
   $('qaForm').addEventListener('submit',e=>{e.preventDefault();const p=parseTask($('qaT').value);if(!p.title)return;
     const labs=[...new Set([...QA.labels,...p.labels.map(labelId)])];
     snap();const t=addTask({title:p.title,desc:$('qaD').value.trim(),project:p.project||QA.project,section:p.project?(p.section||null):(p.section||QA.section),
-      due:p.due||QA.due,time:p.due?p.time:QA.time,recur:p.recur||QA.recur,deadline:p.deadline||QA.deadline,priority:p.priority||QA.priority,labels:labs});
+      due:p.due||QA.due,time:p.due?p.time:QA.time,recur:p.recur||QA.recur,deadline:p.deadline||QA.deadline,priority:p.priority||QA.priority,labels:labs,book:QA.book||null});
     if(t.recur&&!t.due)t.due=firstDue(t.recur);
-    closeModal();commit(`Task added to ${proj(t.project)?.name||'Inbox'}`,true)});
+    closeModal();commit(`Task added to ${proj(t.project)?.name||'No subject'}`,true)});
 }
 function drawQA(){const d=dueInfo(QA.due,QA.time);
   const chip=(id,icon,txt,set,clear,color)=>`<button type="button" class="cbtn ${set?'set':''}" id="${id}" ${color?`style="color:${color}"`:''}>${ic(icon)}<span>${txt}</span>${set&&clear?`<span class="x" data-clear="${clear}" role="button" aria-label="Clear">${ic('x')}</span>`:''}</button>`;
@@ -1299,7 +1496,8 @@ function renderDetail(){const t=S.tasks.find(x=>x.id===detailId);if(!t){closeMod
       <div class="sub"><span class="plus" style="color:var(--accent);display:grid;width:17px">${ic('plus')}</span><input class="st" id="subNew" placeholder="Add sub-task, press Enter"></div></div>
     <p class="muted" style="font-size:12px;margin:14px 0 0">Added ${new Date(t.created).toLocaleDateString([],{day:'numeric',month:'short',year:'numeric'})}${t.done&&t.doneAt?` · Completed ${new Date(t.doneAt).toLocaleDateString([],{day:'numeric',month:'short'})}`:''}</p>
   </div><div class="det-side">
-    <div class="sideblk"><div class="l">Project</div><button class="sbtn" id="dtProj">${t.project==='inbox'?ic('inbox'):`<span class="hash" style="color:${p.color};width:15px">#</span>`}<span class="lab">${esc(p.name)}${t.section&&sect(t.section)?' / '+esc(sect(t.section).name):''}</span>${ic('chevD')}</button></div>
+    <div class="sideblk"><div class="l">Subject</div><button class="sbtn" id="dtProj">${t.project==='inbox'?ic('inbox'):`<span class="hash" style="color:${p.color};width:15px">#</span>`}<span class="lab">${esc(p.name)}${t.section&&sect(t.section)?' / '+esc(sect(t.section).name):''}</span>${ic('chevD')}</button></div>
+    <div class="sideblk"><div class="l">Book</div><button class="sbtn" id="dtBook">${ic('book')}<span class="lab">${t.book&&book(t.book)?esc(book(t.book).name):'No book'}</span>${ic('chevD')}</button></div>
     <div class="sideblk"><div class="l">Date</div><button class="sbtn" id="dtDate" ${d?`style="color:var(--${{late:'p1',today:'green',tom:'orange',week:'purple',later:'fg'}[d.cls]})"`:''}>${ic(t.recur?'repeat':'cal')}<span class="lab">${d?d.txt:'No date'}</span></button>${t.recur?`<div class="muted" style="font-size:12px;padding-left:28px">${recurText(t.recur)}</div>`:''}</div>
     <div class="sideblk"><div class="l">Deadline</div><button class="sbtn" id="dtDl">${ic('target')}<span class="lab">${t.deadline?fmtShort(t.deadline):'No deadline'}</span></button></div>
     <div class="sideblk"><div class="l">Priority</div><button class="sbtn" id="dtPri"><span style="color:${PRI[t.priority]};display:grid">${ic('flag')}</span><span class="lab">P${t.priority}</span></button></div>
@@ -1311,6 +1509,7 @@ function renderDetail(){const t=S.tasks.find(x=>x.id===detailId);if(!t){closeMod
   $('dtT').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
   $('dtD').addEventListener('change',e=>upd({desc:e.target.value}));
   $('dtProj').onclick=e=>projPop(e.currentTarget,t,(pp,s)=>upd({project:pp,section:s}));
+  $('dtBook').onclick=e=>bookPop(e.currentTarget,t.book,id=>upd({book:id}));
   $('dtDate').onclick=e=>datePop(e.currentTarget,{due:t.due,time:t.time,recur:t.recur},v=>upd(v));
   $('dtDl').onclick=e=>datePop(e.currentTarget,{due:t.deadline},v=>upd({deadline:v.due}),true);
   $('dtPri').onclick=e=>priPop(e.currentTarget,t.priority,pp=>upd({priority:pp}));
@@ -1322,23 +1521,28 @@ function renderDetail(){const t=S.tasks.find(x=>x.id===detailId);if(!t){closeMod
 /* generic edit modals */
 function swatches(cur){return`<div class="swatches">${COLORS.map(([n,c])=>`<button type="button" class="sw ${c===cur?'on':''}" data-c="${c}" aria-label="${n}" title="${n}"><i style="background:${c}"></i></button>`).join('')}</div>`}
 function wireSw(){let c=document.querySelector('.sw.on')?.dataset.c;document.querySelector('.swatches').onclick=e=>{const b=e.target.closest('.sw');if(!b)return;document.querySelectorAll('.sw').forEach(x=>x.classList.toggle('on',x===b));c=b.dataset.c};return()=>c}
-function editProject(id,parentDef=null){const p=id?proj(id):{name:'',color:'#4073ff',parent:parentDef,fav:false};
-  const parents=S.projects.filter(x=>!x.archived&&x.id!==id&&!(id&&descendants(id).includes(x.id)));
-  showModal(`<form id="pf"><div class="mh"><b>${id?'Edit project':'Add project'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+function editProject(id,parentDef=null,asFolder=false){const p=id?proj(id):{name:'',color:'#4073ff',parent:parentDef,fav:false,folder:asFolder};
+  let isF=!!p.folder;
+  const parents=S.projects.filter(x=>!x.archived&&x.id!==id&&(x.folder||x.id===p.parent)&&!(id&&descendants(id).includes(x.id)));
+  showModal(`<form id="pf"><div class="mh"><b id="pfH"></b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <div class="fld" ${id?'hidden':''}><span class="l">Type</span><div class="pillseg" id="pfType"><button type="button" data-t="0" class="${isF?'':'on'}">Subject</button><button type="button" data-t="1" class="${isF?'on':''}">Folder (like GS1)</button></div></div>
     <div class="fld"><label for="pfN">Name</label><input class="inp" id="pfN" value="${esc(p.name)}" maxlength="120" autocomplete="off"></div>
     <div class="fld"><span class="l">Color</span>${swatches(p.color)}</div>
-    <div class="fld"><label for="pfP">Parent project</label><select class="inp" id="pfP"><option value="">No parent</option>${parents.map(x=>`<option value="${x.id}" ${x.id===p.parent?'selected':''}>${esc(projPath(x.id))}</option>`).join('')}</select></div>
+    <div class="fld" id="pfPF" ${isF?'hidden':''}><label for="pfP">Folder</label><select class="inp" id="pfP"><option value="">No folder</option>${parents.map(x=>`<option value="${x.id}" ${x.id===p.parent?'selected':''}>${esc(projPath(x.id))}</option>`).join('')}</select></div>
     <label class="ck" style="border:0;padding:0"><input type="checkbox" id="pfF" ${p.fav?'checked':''}> Add to favorites</label></div>
     <div class="mf">${id?`<button type="button" class="btn danger" id="pfDel" style="margin-right:auto">Delete</button><button type="button" class="btn sec" id="pfArc">Archive</button>`:''}<button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">${id?'Save':'Add'}</button></div></form>`);
+  const head=()=>{$('pfH').textContent=(id?'Edit ':'Add ')+(isF?'folder':'subject');$('pfPF').hidden=isF};head();
+  $('pfType').onclick=e=>{const b=e.target.closest('[data-t]');if(!b)return;isF=b.dataset.t==='1';document.querySelectorAll('#pfType button').forEach(x=>x.classList.toggle('on',x===b));head()};
   const col=wireSw();setTimeout(()=>$('pfN').focus(),0);
   $('pf').onsubmit=e=>{e.preventDefault();const n=$('pfN').value.trim();if(!n){$('pfN').focus();return}snap();
-    if(id)Object.assign(p,{name:n,color:col(),parent:$('pfP').value||null,fav:$('pfF').checked});
-    else{const np={id:uid(),name:n,color:col(),parent:$('pfP').value||null,fav:$('pfF').checked,archived:false,order:S.projects.length};S.projects.push(np);closeModal();go('p:'+np.id);commit('Project added',true);return}
-    closeModal();commit('Project saved',true)};
+    const par=isF?null:($('pfP').value||null);
+    if(id)Object.assign(p,{name:n,color:col(),parent:par,fav:$('pfF').checked});
+    else{const np={id:uid(),name:n,color:col(),parent:par,fav:$('pfF').checked,archived:false,order:S.projects.length,folder:isF};S.projects.push(np);closeModal();go('p:'+np.id);commit(isF?'Folder added':'Subject added',true);return}
+    closeModal();commit('Saved',true)};
   if(id){$('pfDel').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;const n=S.tasks.filter(t=>[id,...descendants(id)].includes(t.project)).length;b.textContent=`Delete ${n} task${n===1?'':'s'} too? Tap again`;return}
       snap();const ids=[id,...descendants(id)];S.projects=S.projects.filter(x=>!ids.includes(x.id));S.tasks=S.tasks.filter(t=>!ids.includes(t.project));S.sections=S.sections.filter(s=>!ids.includes(s.project));
-      closeModal();if(view.startsWith('p:')&&ids.includes(view.slice(2)))go('inbox');commit('Project deleted',true)};
-    $('pfArc').onclick=()=>{snap();[id,...descendants(id)].forEach(x=>proj(x).archived=true);closeModal();if(view==='p:'+id)go('projects');commit('Project archived',true)}}}
+      closeModal();if(view.startsWith('p:')&&ids.includes(view.slice(2)))go('today');commit('Deleted',true)};
+    $('pfArc').onclick=()=>{snap();[id,...descendants(id)].forEach(x=>proj(x).archived=true);closeModal();if(view==='p:'+id)go('projects');commit('Archived',true)}}}
 function editLabel(id){const l=id?label(id):{name:'',color:'#db4035',fav:false};
   showModal(`<form id="lf"><div class="mh"><b>${id?'Edit label':'Add label'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
     <div class="fld"><label for="lfN">Name</label><input class="inp" id="lfN" value="${esc(l.name)}" autocomplete="off"></div><div class="fld"><span class="l">Color</span>${swatches(l.color)}</div>
@@ -1353,7 +1557,7 @@ function editFilter(id){const f=id?filt(id):{name:'',color:'#884dff',fav:false,q
     <div class="fld"><label for="ffN">Name</label><input class="inp" id="ffN" value="${esc(f.name)}" autocomplete="off"></div>
     <div class="fld"><span class="l">Priority (any of)</span><div class="checks">${[1,2,3,4].map(p=>`<label class="ck"><input type="checkbox" name="pri" value="${p}" ${f.q.pri.includes(p)?'checked':''}><span style="color:${PRI[p]};display:grid">${ic('flag')}</span>P${p}</label>`).join('')}</div></div>
     <div class="fld"><span class="l">Labels (any of)</span><div class="checks">${S.labels.map(l=>`<label class="ck"><input type="checkbox" name="lab" value="${l.id}" ${f.q.labels.includes(l.id)?'checked':''}>@${esc(l.name)}</label>`).join('')||'<span class="muted">No labels yet</span>'}</div></div>
-    <div class="fld"><span class="l">Projects (any of, includes sub-projects)</span><div class="checks"><label class="ck"><input type="checkbox" name="prj" value="inbox" ${f.q.projects.includes('inbox')?'checked':''}>Inbox</label>${S.projects.filter(p=>!p.archived).map(p=>`<label class="ck"><input type="checkbox" name="prj" value="${p.id}" ${f.q.projects.includes(p.id)?'checked':''}>${esc(p.name)}</label>`).join('')}</div></div>
+    <div class="fld"><span class="l">Subjects (any of, folders include their subjects)</span><div class="checks"><label class="ck"><input type="checkbox" name="prj" value="inbox" ${f.q.projects.includes('inbox')?'checked':''}>No subject</label>${S.projects.filter(p=>!p.archived).map(p=>`<label class="ck"><input type="checkbox" name="prj" value="${p.id}" ${f.q.projects.includes(p.id)?'checked':''}>${esc(p.name)}</label>`).join('')}</div></div>
     <div class="fld"><label for="ffD">Due</label><select class="inp" id="ffD">${[['any','Any time'],['overdue','Overdue'],['today','Today or overdue'],['7','Next 7 days (incl. overdue)'],['none','No date']].map(([v,n])=>`<option value="${v}" ${f.q.due===v?'selected':''}>${n}</option>`).join('')}</select></div>
     <div class="fld"><span class="l">Color</span>${swatches(f.color)}</div>
     <label class="ck" style="border:0;padding:0"><input type="checkbox" id="ffF" ${f.fav?'checked':''}> Add to favorites</label></div>
@@ -1406,7 +1610,7 @@ function drawSettings(){
   else if(settingsPage==='general'){
     B.innerHTML=`<div class="switch"><label for="stW">Week starts on</label><select id="stW"><option value="1" ${S.settings.weekStart===1?'selected':''}>Monday</option><option value="0" ${S.settings.weekStart===0?'selected':''}>Sunday</option></select></div>
     <div class="l" style="font-weight:600;font-size:13px;margin:18px 0 4px">Shortcuts</div>
-    <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / Inbox · <b>Esc</b> close</p>
+    <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / No subject · <b>Esc</b> close</p>
     <div class="l" style="font-weight:600;font-size:13px;margin:18px 0 4px">Data</div>
     <button class="btn danger" id="stReset" style="padding-left:0">Reset all data</button>`;
     $('stW').onchange=e=>{S.settings.weekStart=+e.target.value;S.ui.upStart=null;commit()};
@@ -1461,22 +1665,32 @@ document.addEventListener('click',e=>{
   case'signOut':doSignOut();break;
   case'profile':$('app').classList.remove('drawer');profileModal();break;
   case'editProject':stop();editProject(id);break;
+  case'upscPreset':stop();upscPreset();break;
+  case'editFolder':stop();editProject(null,null,true);break;
+  case'editBook':stop();editBook(id);break;
+  case'editRem':stop();editRem(id,b.dataset.d);break;
+  case'remToggle':stop();toggleRem(id);break;
+  case'remDel':{stop();snap();S.reminders=S.reminders.filter(x=>x.id!==id);commit('Reminder deleted',true);break}
+  case'remClear':snap();S.reminders=S.reminders.filter(x=>!x.done);commit('Completed reminders cleared',true);break;
+  case'remPerm':try{Notification.requestPermission().then(()=>render())}catch(_){}break;
+  case'editExam':stop();editExam(id);break;
+  case'calDay':S.ui.calSel=b.dataset.d;saveLocal();render();break;
   case'editLabel':stop();editLabel(id);break;
   case'editFilter':stop();editFilter(id);break;
-  case'unarchive':snap();proj(id).archived=false;commit('Project restored',true);break;
+  case'unarchive':snap();proj(id).archived=false;commit('Restored',true);break;
   case'clearSamples':snap();S.tasks=S.tasks.filter(t=>!t.sample);S.log=[];commit('Sample tasks cleared',true);break;
   case'projMenu':{const p=proj(view.slice(2));menuPop(b,[
-    {label:'Edit project',icon:'edit',run:()=>editProject(p.id)},{label:'Add section',icon:'plus',run:()=>addSection(99)},
-    {label:'Add sub-project',icon:'folder',run:()=>editProject(null,p.id)},
+    {label:'Edit',icon:'edit',run:()=>editProject(p.id)},
+    ...(p.folder?[{label:'Add subject here',icon:'plus',run:()=>editProject(null,p.id)}]:[{label:'Add section',icon:'plus',run:()=>addSection(99)}]),
     {label:p.fav?'Remove from favorites':'Add to favorites',icon:'star',run:()=>{p.fav=!p.fav;commit()}},
-    '-',{label:'Archive',icon:'archive',run:()=>{snap();[p.id,...descendants(p.id)].forEach(x=>proj(x).archived=true);go('projects');commit('Project archived',true)}}]);break}
+    '-',{label:'Archive',icon:'archive',run:()=>{snap();[p.id,...descendants(p.id)].forEach(x=>proj(x).archived=true);go('projects');commit('Archived',true)}}]);break}
   case'sectionMenu':{stop();const s=sect(id);menuPop(b,[
     {label:'Rename section',icon:'edit',run:()=>promptModal('Rename section',s.name,v=>{snap();s.name=v;commit()})},
     {label:'Delete section',icon:'trash',danger:true,run:()=>{snap();S.tasks.filter(t=>t.section===id).forEach(t=>t.section=null);S.sections=S.sections.filter(x=>x.id!==id);commit('Section deleted; its tasks moved up',true)}}]);break}
   case'addSection':addSection(+b.dataset.after);break;
   case'upNav':{const n=+b.dataset.n;if(!n){S.ui.upStart=null;S.ui.upSel=T()}else S.ui.upStart=addD(upStart(),n);save();render();break}
   case'upDay':S.ui.upSel=b.dataset.d;save();render();setTimeout(()=>document.getElementById('day-'+b.dataset.d)?.scrollIntoView({behavior:'smooth',block:'start'}),0);break;
-  case'calNav':{const n=+b.dataset.n;if(!n)S.ui.calMonth=null;else{const d=pd(S.ui.calMonth||T().slice(0,8)+'01');d.setMonth(d.getMonth()+n);S.ui.calMonth=iso(d)}save();render();break}
+  case'calNav':{const n=+b.dataset.n;if(!n){S.ui.calMonth=null;S.ui.calSel=T()}else{const d=pd(S.ui.calMonth||T().slice(0,8)+'01');d.setMonth(d.getMonth()+n);S.ui.calMonth=iso(d)}save();render();break}
   case'subTog':{stop();const t=S.tasks.find(x=>x.id===detailId);const s=t.subs.find(x=>x.id===b.dataset.s);s.done=!s.done;save();render();break}
   case'subDel':{stop();const t=S.tasks.find(x=>x.id===detailId);t.subs=t.subs.filter(x=>x.id!==b.dataset.s);save();render();break}
   case'rmLabel':{stop();const t=S.tasks.find(x=>x.id===detailId);t.labels=t.labels.filter(x=>x!==b.dataset.l);save();render();break}
@@ -1510,6 +1724,7 @@ document.addEventListener('scroll',e=>{if(e.target.id==='content')$('crumb').cla
 /* ================= boot ================= */
 view=viewOf(location.hash);if(!validView(view))view='today';
 wireWeekly();
+setInterval(checkReminders,15000);setTimeout(checkReminders,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});
 render();
 initCloud();
 </script>

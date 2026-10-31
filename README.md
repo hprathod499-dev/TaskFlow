@@ -19,3 +19,11 @@ Completed tasks and activity older than 7 days are kept off the live site to kee
 - Each backup file holds the live tasks plus the full archive, so the newest file is all you need to restore.
 - The archive is kept on each device in the browser (IndexedDB) and shown under Activity, Older history.
 - Restoring on a new device adds missing tasks and puts anything older than 7 days into that device's archive.
+
+## Study planner pages
+
+- **Today's task, Task calendar, Upcoming, Filters & Labels, Completed**: the main task views. Task calendar is a month grid with a day panel for the tapped day (tasks, reminders, exam days).
+- **My Subjects**: folders (for example GS1 to GS4) hold subjects (History, Polity and so on). Tasks belong to a subject; a folder page shows all tasks of its subjects. "Add UPSC subjects" creates a starting set.
+- **Manage Book**: keep a list of books and link tasks to a book from the task window.
+- **Event & Reminder**: reminders with date, time and repeat. They alert while TaskFlow is open (and as a system notification if allowed); a web page cannot ring when it is closed.
+- **Exam plan**: exams with a countdown and progress (finished tasks in the chosen subjects).
