@@ -638,7 +638,7 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const PRI={1:'var(--p1)',2:'var(--p2)',3:'var(--p3)',4:'var(--p4)'};
 
 function sampleData(){
-  return{v:2,user:{name:''},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],
+  return{v:2,user:{name:''},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],books:[],reminders:[],exams:[],
     display:{},recent:['today'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}}}
 function demoData(){
   const P=(id,name,color,parent=null,fav=false)=>({id,name,color,parent,fav,archived:false,order:0});
@@ -751,7 +751,9 @@ function doSignIn(){
 function doSignOut(){
   const a=auth;detach();
   S=sampleData();S.tasks=[];S.log=[];S.projects=[];S.sections=[];S.labels=[];S.filters=[];S.recent=['today'];S.dirty=false;lastSig=sig();saveLocal();applyTheme();
-  closeModal();view='today';location.hash='today';setStatus('local');render();a.signOut()}
+  closeModal();$('app').classList.remove('drawer');view='today';location.hash='today';setStatus('local');render();showLogin();
+  const el=document.getElementById('loginErr');if(el)el.textContent='';
+  Promise.resolve(a.signOut()).catch(()=>{}).then(()=>{showLogin()})}
 const GLOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
 const nameSet=()=>!!(S.user.name&&S.user.name!=='Me');
 const dispName=()=>nameSet()?S.user.name:'Add your name';
@@ -784,7 +786,7 @@ function profileModal(){
     <div class="fld" style="text-align:left"><label for="prN">Your name</label><input class="inp" id="prN" placeholder="Add your name" value="${esc(nameSet()?S.user.name:'')}" maxlength="40" autocomplete="off"></div>
     <div style="text-align:left"><div style="font-weight:600;font-size:13px;margin-bottom:6px">Appearance</div><div class="seg" id="prTh">${seg}</div></div>
   </div>
-  <div class="mf" style="justify-content:space-between">${u?'<button class="btn danger" data-a="signOut">Sign out</button>':`<button class="gbtn" data-a="signIn" style="width:auto;padding:8px 14px">${GLOGO}<span>Sign in with Google</span></button>`}<button class="btn pri" data-a="closeModal">Done</button></div>`);
+  <div class="mf" style="justify-content:space-between">${u?'<button class="btn danger" data-a="signOut">Log out</button>':`<button class="gbtn" data-a="signIn" style="width:auto;padding:8px 14px">${GLOGO}<span>Sign in with Google</span></button>`}<button class="btn pri" data-a="closeModal">Done</button></div>`);
   const m=document.querySelector('.modal');
   m.querySelector('#prN').addEventListener('change',e=>{S.user.name=e.target.value.trim();save();render();
     m.querySelector('#prH').textContent=greeting()+(nameSet()?', '+S.user.name:'')+'!';m.querySelector('#prAv').innerHTML=avatarInner()});
@@ -946,7 +948,7 @@ function wireDrive(){
     b.disabled=true;msg('Restoring…');try{await driveRestore(b.dataset.gdr)}catch(err){console.error(err);msg(driveErr(err));b.disabled=false}})}
 function accountBlock(){const u=cloud.user;
   return ``+(u
-   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Signed in as <b>${esc(u.email||u.displayName||'')}</b><br>Status: ${syncLabel()}</p><button class="btn sec" data-a="signOut">Sign out</button>`
+   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Signed in as <b>${esc(u.email||u.displayName||'')}</b><br>Status: ${syncLabel()}</p><button class="btn sec" data-a="signOut">Log out</button>`
    :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="gbtn" data-a="signIn">${GLOGO}<span>Sign in with Google</span></button>`)}
 function initCloud(){
   try{firebase.initializeApp(FB_CFG);auth=firebase.auth();db=firebase.database()}
