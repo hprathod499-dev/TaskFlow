@@ -642,9 +642,9 @@ function sampleData(){
     display:{},recent:['today'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}}}
 function demoData(){
   const P=(id,name,color,parent=null,fav=false)=>({id,name,color,parent,fav,archived:false,order:0});
-  const projects=[P('upsc','UPSC','#ff9933'),P('society','Society','#299438','upsc'),P('geography','Geography','#4073ff','upsc',true),
-    P('ir','International Relations','#db4035','upsc'),P('economy','Economy','#b8256f','upsc',true),P('isec','Internal Security','#158fad','upsc',true),
-    P('ethics','Ethics','#884dff','upsc',true),P('polity','Polity','#fad000','upsc'),P('matrix','Eisenhower Matrix','#14aaf5')];
+  const projects=[P('study','Study','#ff9933'),P('society','Society','#299438','study'),P('geography','Geography','#4073ff','study',true),
+    P('ir','International Relations','#db4035','study'),P('economy','Economy','#b8256f','study',true),P('isec','Internal Security','#158fad','study',true),
+    P('ethics','Ethics','#884dff','study',true),P('polity','Polity','#fad000','study'),P('matrix','Eisenhower Matrix','#14aaf5')];
   projects.forEach((p,i)=>p.order=i);
   const sections=[{id:'s_do',project:'matrix',name:'Do first',order:0},{id:'s_plan',project:'matrix',name:'Schedule',order:1},{id:'s_del',project:'matrix',name:'Delegate or drop',order:2}];
   const labels=[{id:'urgent',name:'urgent',color:'#db4035',fav:true},{id:'important',name:'important',color:'#ff9933',fav:true},{id:'revision',name:'revision',color:'#4073ff',fav:false}];
@@ -1093,7 +1093,6 @@ function renderSide(){const c=counts();
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
     <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
     ${S.ui.projOpen?projTree(null,0,c)+(c.inbox?navItem('inbox','No subject',c.inbox):''):''}
-    ${S.ui.projOpen&&!S.projects.some(x=>!x.archived)?`<div class="nav-i" role="button" tabindex="0" data-a="upscPreset"><span class="ico">➕</span><span class="lab">Add UPSC subjects</span></div>`:''}
     <div class="side-foot">
       <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">✏️</span><span class="lab">Manage subjects</span></div>
       <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">⚙️</span><span class="lab">Settings</span></div>
@@ -1231,14 +1230,8 @@ function filtersHTML(){const c=counts();
 function projectsHTML(){const c=counts();
   const tree=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).map(p=>`<div class="row-i" style="padding-left:${4+d*20}px" data-a="go" data-v="p:${p.id}">${viewIcon('p:'+p.id)}<span class="lab">${esc(p.name)}</span><span class="n">${c.proj(p.id)||''}</span><button class="ibtn" data-a="editProject" data-id="${p.id}" aria-label="Edit">${ic('edit')}</button></div>`+tree(p.id,d+1)).join('');
   const arch=S.projects.filter(p=>p.archived);
-  return`<div class="hdr2">Subjects <span style="display:flex;gap:6px"><button class="pill" data-a="editFolder">${ic('folder')} Add folder</button><button class="pill" data-a="editProject">${ic('plus')} Add subject</button></span></div>${tree(null,0)||`<p class="muted">No subjects yet.</p><button class="pill" data-a="upscPreset">${ic('plus')} Add UPSC subjects (GS1 to GS4 folders)</button>`}
+  return`<div class="hdr2">Subjects <span style="display:flex;gap:6px"><button class="pill" data-a="editFolder">${ic('folder')} Add folder</button><button class="pill" data-a="editProject">${ic('plus')} Add subject</button></span></div>${tree(null,0)||`<p class="muted">No subjects yet.</p>`}
   ${arch.length?`<div class="hdr2" style="margin-top:14px">Archived</div>${arch.map(p=>`<div class="row-i"><span class="hash" style="color:${p.color}">#</span><span class="lab muted">${esc(p.name)}</span><button class="pill" data-a="unarchive" data-id="${p.id}">Unarchive</button></div>`).join('')}`:''}`}
-function upscPreset(){snap();
-  const mk=(name,color,parent=null,folder=false)=>{const x={id:uid(),name,color,parent,fav:false,archived:false,order:S.projects.length,folder};S.projects.push(x);return x.id};
-  const g1=mk('GS1','#ff9933',null,true),g2=mk('GS2','#4073ff',null,true),g3=mk('GS3','#299438',null,true);mk('GS4','#884dff',null,true);
-  mk('History','#ff9933',g1);mk('Geography','#14aaf5',g1);mk('Art and culture','#eb96eb',g1);
-  mk('Polity','#4073ff',g2);mk('Economics','#299438',g3);mk('Environment','#7ecc49',g3);
-  commit('UPSC subjects added',true);go('projects')}
 
 /* ================= books ================= */
 function booksHTML(){
@@ -1361,7 +1354,7 @@ function examsHTML(){
 function editExam(id){const e=id?S.exams.find(x=>x.id===id):{name:'',date:'',subjects:[],notes:''};if(!e)return;
   const rows=[];const walk=(parent,d)=>S.projects.filter(p=>p.parent===parent&&!p.archived).sort((a,b)=>a.order-b.order).forEach(p=>{rows.push({p,d});walk(p.id,d+1)});walk(null,0);
   showModal(`<form id="ef"><div class="mh"><b>${id?'Edit exam':'Add exam'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
-    <div class="fld"><label for="efN">Exam name</label><input class="inp" id="efN" value="${esc(e.name)}" maxlength="140" placeholder="For example, UPSC Prelims" autocomplete="off"></div>
+    <div class="fld"><label for="efN">Exam name</label><input class="inp" id="efN" value="${esc(e.name)}" maxlength="140" placeholder="For example, Final exam" autocomplete="off"></div>
     <div class="fld"><label for="efD">Exam date</label><input class="inp" type="date" id="efD" value="${e.date}"></div>
     <div class="fld"><span class="l">Subjects in the syllabus (tasks in them count as progress)</span><div class="checks">${rows.length?rows.map(({p,d})=>`<label class="ck" style="padding-left:${8+d*16}px"><input type="checkbox" name="efS" value="${p.id}" ${(e.subjects||[]).includes(p.id)?'checked':''}>${esc(p.name)}</label>`).join(''):'<span class="muted" style="font-size:13px">Add subjects first.</span>'}</div></div>
     <div class="fld"><label for="efT">Notes (optional)</label><textarea class="inp" id="efT" rows="2">${esc(e.notes||'')}</textarea></div></div>
@@ -1758,7 +1751,6 @@ document.addEventListener('click',e=>{
   case'signOut':doSignOut();break;
   case'profile':$('app').classList.remove('drawer');profileModal();break;
   case'editProject':stop();editProject(id);break;
-  case'upscPreset':stop();upscPreset();break;
   case'editFolder':stop();editProject(null,null,true);break;
   case'editBook':stop();editBook(id);break;
   case'chapAdd':{stop();const i=$('chN');if(i){addChapters(id,i.value)}break}
