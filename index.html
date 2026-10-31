@@ -3,35 +3,39 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1e1e1e">
+<meta name="theme-color" content="#1E1712">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>TaskFlow</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Gujarati:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
 <style>
-/* Layout: Todoist-style — fixed left sidebar (views, favorites, project tree) + main task column; sidebar becomes a drawer under 860px. Dark-first. */
+/* Look and feel copied from Nokri Book: warm Classic palette, dark brown sidebar, Space Grotesk headings, pure-black dark mode. */
 :root{
-  --bg:#1f1f1f; --side:#262626; --card:#2a2a2a; --raise:#323232; --hover:#2f2f2f;
-  --fg:#ececec; --muted:#a3a3a3; --faint:#6f6f6f; --line:#353535;
-  --accent:#e5534b; --accent-btn:var(--accent); --accent-fg:#ffffff; --accent-soft:#3d2523;
+  --bg:#000000; --side:#0d1117; --card:#000000; --raise:#0d1117; --hover:#161b22;
+  --fg:#ffffff; --muted:#c3cbd3; --faint:#8b96a3; --line:#333c48;
+  --accent:#f0a93e; --accent-btn:#d98e2b; --accent-fg:#1a1208; --accent-soft:#2a2112; --strong:#d98e2b;
+  --sb-bg:#000000; --btn-dark:#2e3742;
   --p1:#ff7066; --p2:#ff9a14; --p3:#5297ff; --p4:#8b8b8b;
   --green:#3dbd63; --orange:#ff9a14; --purple:#b483ff; --blue:#5297ff;
   --shadow:0 12px 40px #0009,0 2px 6px #0006;
-  --f-display:"Outfit",system-ui,sans-serif;
-  --f-body:"Figtree",system-ui,-apple-system,sans-serif;
+  --f-display:"Space Grotesk",system-ui,sans-serif;
+  --f-body:"Inter","Noto Sans Gujarati",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,monospace;
   color-scheme:dark;
 }
 @media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
-  --bg:#ffffff; --side:#fcfaf8; --card:#ffffff; --raise:#f5f2ee; --hover:#f3efea;
-  --fg:#202020; --muted:#666666; --faint:#9c9c9c; --line:#ebe7e2;
-  --accent:#dc4c3e; --accent-fg:#ffffff; --accent-soft:#ffefe8;
+  --bg:#F4EBDC; --side:#F1E6D2; --card:#FFFDF8; --raise:#F1E6D2; --hover:#EFE4CD;
+  --fg:#2B2116; --muted:#6E5D49; --faint:#8F7E66; --line:#E4D5B8;
+  --accent:#9A5A0B; --accent-btn:#D98E2B; --accent-fg:#2B2116; --accent-soft:#FCEFD9; --strong:#D98E2B;
+  --sb-bg:#1E1712; --btn-dark:#2B2116;
   --p1:#d1453b; --p2:#eb8909; --p3:#246fe0; --p4:#8a8a8a;
   --green:#058527; --orange:#ad6200; --purple:#692ec2; --blue:#246fe0;
   --shadow:0 12px 40px #0002,0 2px 6px #0001; color-scheme:light}}
 :root[data-theme="light"]{
-  --bg:#ffffff; --side:#fcfaf8; --card:#ffffff; --raise:#f5f2ee; --hover:#f3efea;
-  --fg:#202020; --muted:#666666; --faint:#9c9c9c; --line:#ebe7e2;
-  --accent:#dc4c3e; --accent-fg:#ffffff; --accent-soft:#ffefe8;
+  --bg:#F4EBDC; --side:#F1E6D2; --card:#FFFDF8; --raise:#F1E6D2; --hover:#EFE4CD;
+  --fg:#2B2116; --muted:#6E5D49; --faint:#8F7E66; --line:#E4D5B8;
+  --accent:#9A5A0B; --accent-btn:#D98E2B; --accent-fg:#2B2116; --accent-soft:#FCEFD9; --strong:#D98E2B;
+  --sb-bg:#1E1712; --btn-dark:#2B2116;
   --p1:#d1453b; --p2:#eb8909; --p3:#246fe0; --p4:#8a8a8a;
   --green:#058527; --orange:#ad6200; --purple:#692ec2; --blue:#246fe0;
   --shadow:0 12px 40px #0002,0 2px 6px #0001; color-scheme:light}
@@ -417,6 +421,58 @@ body{margin:0}
 .pcard h2{font-family:var(--f-display);font-size:22px;margin:6px 0 2px;text-wrap:balance}
 .quote{color:var(--muted);font-style:italic}
 #loginErr{color:var(--p1);font-size:13px;min-height:1em}
+
+/* ---------- Nokri Book look ---------- */
+h1,.pcard h2,#weekly h2{font-family:var(--f-display);letter-spacing:-.01em}
+.app{grid-template-columns:230px 1fr}
+.app.collapsed{grid-template-columns:0 1fr}
+@media (max-width:860px){.app,.app.collapsed{grid-template-columns:1fr}}
+aside{background:var(--sb-bg);border-right:0;
+  --fg:#B7C2CA;--muted:#8FA0AC;--faint:#6B7A85;--line:#1B2733;--hover:#1B2733;--raise:#1B2733;--accent:#fff;--accent-soft:#1B2733}
+.side-top{padding:14px 14px 12px;border-bottom:1px solid #1B2733}
+.side-top .who{font-family:var(--f-display);font-weight:700;color:#fff}
+.avatar{background:var(--strong);color:#1a1208}
+.side-scroll{padding:6px 0 24px}
+.add-task-side,.nav-i{border-radius:0;border-left:3px solid transparent;padding:9px 16px 9px 12px;padding-left:calc(12px + var(--d,0)*14px);min-height:0;color:var(--fg);font-weight:500;font-size:13.5px;gap:10px;width:100%}
+.add-task-side{margin:0;font-weight:500}
+.add-task-side .ico{width:20px;display:grid;place-items:center}
+.nav-i.on{background:#1B2733;color:#fff;font-weight:600;border-left-color:var(--strong)}
+.nav-i.on .ico,.nav-i.on .n{color:#fff}
+.nav-i .n{font-family:var(--f-mono);font-size:11px}
+.nav-i .ico,.emo{font-size:15px;line-height:1;filter:none}
+.emo{display:grid;place-items:center}
+.sec-h{padding:14px 16px 4px;text-transform:uppercase;letter-spacing:.06em;font-size:11px;color:#6B7A85}
+.side-foot{border-top:1px solid #1B2733;padding-top:6px}
+.wrap{max-width:1040px;margin:0;padding:12px 36px 120px}
+.wrap.wide{max-width:none}
+.task{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin-bottom:6px}
+.task:hover{background:var(--hover)}
+.pill{border:1px solid var(--line);border-radius:20px;background:var(--card);padding:5px 12px}
+.toast{background:var(--btn-dark);color:#fff}
+.toast button{color:var(--strong)}
+input:not([type=checkbox]):not([type=radio]),textarea,select{border-radius:6px}
+button:active{transform:scale(.97)}
+.modal,.pcard{animation:nkIn .18s ease-out}
+@keyframes nkIn{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+/* Nokri two-card calendar */
+.nkcal{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:16px;align-items:start}
+.nkcard{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.nkh{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.nkh .mon{flex:1;font-family:var(--f-display);font-weight:700;font-size:18px}
+.nkg{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.nkg .dh{font-size:10.5px;color:var(--muted);text-align:center;font-weight:600;padding-bottom:2px}
+.nkc{aspect-ratio:1;border:1px solid var(--line);border-radius:6px;background:var(--card);position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;padding:4px 5px;text-align:left;min-width:0}
+.nkc:hover{background:var(--hover)}
+.nkc.out{opacity:.4}
+.nkc .dn{font-family:var(--f-mono);font-size:12px;color:var(--fg)}
+.nkc .ct{font-size:11px;font-weight:700;color:var(--accent)}
+.nkc.today{background:var(--raise)} .nkc.today .dn{font-weight:700}
+.nkc.sel{border-color:var(--strong);background:var(--accent-soft);box-shadow:0 0 0 1px var(--strong)}
+.nkc .dot{position:absolute;top:4px;right:4px;width:6px;height:6px;border-radius:50%;background:var(--blue)}
+.nkc .dot.ex{background:var(--p1)}
+@media(max-width:860px){.nkcal{grid-template-columns:1fr}}
+@media(max-width:860px){.wrap{padding:8px 16px 120px}}
+@media(max-width:560px){.nkcard{padding:12px}.nkc{padding:2px 3px}.nkc .dn{font-size:11px}}
 </style>
 </head>
 <body>
@@ -650,7 +706,7 @@ function mergeData(local,remote){
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
 function adopt(remote){ensure(remote);stashPurged(remote);remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
-  if(S.settings.syncTheme!==false&&remote.user&&remote.user.theme){S.settings.theme=remote.user.theme.mode||S.settings.theme;S.settings.color=remote.user.theme.color||'todoist'}
+  if(S.settings.syncTheme!==false&&remote.user&&remote.user.theme){S.settings.theme=remote.user.theme.mode||S.settings.theme;S.settings.color=remote.user.theme.color||'classic'}
   S=remote;applyTheme();lastSig=sig();saveLocal();if(!validView(view))view='today'}
 function attach(u){
   cloud.user=u;cloud.first=true;setStatus('connecting');
@@ -730,7 +786,7 @@ function profileModal(){
   m.querySelector('#prN').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
   m.querySelector('#prTh').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(!b)return;
     setThemePrefs({theme:b.dataset.th});m.querySelectorAll('#prTh button').forEach(x=>x.classList.toggle('on',x===b))})}
-function setThemePrefs(o){Object.assign(S.settings,o);if(S.settings.syncTheme!==false)S.user.theme={mode:S.settings.theme,color:S.settings.color||'todoist'};applyTheme();save()}
+function setThemePrefs(o){Object.assign(S.settings,o);if(S.settings.syncTheme!==false)S.user.theme={mode:S.settings.theme,color:S.settings.color||'classic'};applyTheme();save()}
 /* ================= Google Drive backup ================= */
 const DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
 let driveTok=null;
@@ -896,26 +952,25 @@ function initCloud(){
     else{detach();setStatus('local');showLogin();render()}})}
 
 const THEMES=[
- {id:'todoist',name:'TaskFlow',l:'#dc4c3e',d:'#e5534b',b:'#e5534b'},
- {id:'moonstone',name:'Moonstone',l:'#5f6f93',d:'#95a6c0',b:'#677890'},
- {id:'tangerine',name:'Tangerine',l:'#bf6a00',d:'#db933c',b:'#a36b00'},
- {id:'kale',name:'Kale',l:'#3f8a3a',d:'#6cbf5a'},
- {id:'blueberry',name:'Blueberry',l:'#246fe0',d:'#5297ff'},
- {id:'lavender',name:'Lavender',l:'#7a56cc',d:'#a98af0'},
- {id:'raspberry',name:'Raspberry',l:'#cc3a62',d:'#ee6a8c'}];
-const THEME_BASE={light:{bg:'#ffffff',side:'#fcfaf8',card:'#ffffff',raise:'#f5f2ee',hover:'#f3efea',line:'#ebe7e2'},
-  dark:{bg:'#1f1f1f',side:'#262626',card:'#2a2a2a',raise:'#323232',hover:'#2f2f2f',line:'#353535'}};
-const CT_KEYS=['--accent','--accent-soft','--accent-btn','--bg','--side','--card','--raise','--hover','--line'];
+ {id:'classic',name:'Classic',L:{bg:'#F4EBDC',card:'#FFFDF8',raise:'#F1E6D2',hover:'#EFE4CD',line:'#E4D5B8',fg:'#2B2116',muted:'#6E5D49',faint:'#8F7E66',acc:'#9A5A0B',btn:'#D98E2B',soft:'#FCEFD9',sb:'#1E1712',dk:'#2B2116'},D:{acc:'#F0A93E',btn:'#D98E2B'}},
+ {id:'soft-blue',name:'Soft Blue',L:{bg:'#F2F8FC',card:'#FFFFFF',raise:'#E4F1FA',hover:'#E4F1FA',line:'#D5E6F2',fg:'#000000',muted:'#3F4C57',faint:'#6B7A85',acc:'#2F6FB2',btn:'#4A90D9',soft:'#E4F1FA',sb:'#000000',dk:'#000000'},D:{acc:'#6FB1F0',btn:'#4A90D9'}},
+ {id:'light-green',name:'Light Green',L:{bg:'#F3FAF0',card:'#FFFFFF',raise:'#E7F5E0',hover:'#E7F5E0',line:'#D6EDCB',fg:'#000000',muted:'#3B4A38',faint:'#6B7A68',acc:'#2E7D32',btn:'#4CAF50',soft:'#E7F5E0',sb:'#000000',dk:'#000000'},D:{acc:'#7BC47F',btn:'#4CAF50'}},
+ {id:'lavender',name:'Lavender',L:{bg:'#F7F3FC',card:'#FFFFFF',raise:'#EDE4F7',hover:'#EDE4F7',line:'#DCC9F0',fg:'#000000',muted:'#453A55',faint:'#75698A',acc:'#6B4A9A',btn:'#8E6BBE',soft:'#EDE4F7',sb:'#000000',dk:'#000000'},D:{acc:'#B79BE0',btn:'#8E6BBE'}}];
+const THEME_DARK={bg:'#000000',card:'#000000',raise:'#0D1117',hover:'#161B22',line:'#333C48',fg:'#FFFFFF',muted:'#C3CBD3',faint:'#8B96A3',sb:'#000000',dk:'#2E3742'};
+const CT_KEYS=['--bg','--side','--card','--raise','--hover','--line','--fg','--muted','--faint','--accent','--accent-btn','--accent-fg','--accent-soft','--strong','--sb-bg','--btn-dark'];
+const lum=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)/255).map(v=>v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4));return .2126*c[0]+.7152*c[1]+.0722*c[2]};
+const fgOn=h=>(1.05)/(lum(h)+.05)>=(lum(h)+.05)/.05?'#ffffff':'#101010';
 function isDarkNow(){const t=S.settings.theme;return t==='dark'||(t!=='light'&&!matchMedia('(prefers-color-scheme: light)').matches)}
 /* Like Todoist: colour themes never tint the page. Backgrounds stay neutral; only the accent, the button shade and the selected-row wash change. */
-function themeVars(id,dark){const t=THEMES.find(x=>x.id===id)||THEMES[0],b=dark?THEME_BASE.dark:THEME_BASE.light,a=dark?t.d:t.l;
-  const btn=dark?(t.b||`color-mix(in srgb, ${t.d} 65%, #000)`):a;
-  return{acc:a,btn,accSoft:dark?`color-mix(in srgb, ${btn} 14%, ${b.side})`:`color-mix(in srgb, ${a} 13%, ${b.bg})`,bg:b.bg,side:b.side,line:b.line}}
-function applyColorTheme(){const r=document.documentElement.style,id=S.settings.color||'todoist';
+function themeVars(id,dark){const t=THEMES.find(x=>x.id===id)||THEMES[0],b=dark?Object.assign({},THEME_DARK,t.D):t.L;
+  const btn=b.btn,soft=dark?`color-mix(in srgb, ${btn} 20%, #000)`:b.soft;
+  return{btn,bg:b.bg,sb:b.sb,line:b.line,map:{'--bg':b.bg,'--side':b.raise,'--card':b.card,'--raise':b.raise,'--hover':b.hover,'--line':b.line,'--fg':b.fg,'--muted':b.muted,'--faint':b.faint,
+    '--accent':b.acc,'--accent-btn':btn,'--accent-fg':fgOn(btn),'--accent-soft':soft,'--strong':btn,'--sb-bg':b.sb,'--btn-dark':b.dk}}}
+function applyColorTheme(){const r=document.documentElement.style;
   CT_KEYS.forEach(k=>r.removeProperty(k));
-  if(id==='todoist')return;
-  const v=themeVars(id,isDarkNow());
-  r.setProperty('--accent',v.acc);r.setProperty('--accent-soft',v.accSoft);r.setProperty('--accent-btn',v.btn)}
+  const id=THEMES.some(x=>x.id===S.settings.color)?S.settings.color:'classic';
+  if(id==='classic')return;
+  const v=themeVars(id,isDarkNow());Object.entries(v.map).forEach(([k,x])=>r.setProperty(k,x))}
 function applyTheme(){const t=S.settings.theme;if(t==='system')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t;applyColorTheme()}
 try{matchMedia('(prefers-color-scheme: light)').addEventListener('change',()=>{if(S.settings.theme==='system')applyColorTheme()})}catch(e){}
 applyTheme();
@@ -950,11 +1005,11 @@ function viewName(v){const[k,id]=v.split(':');
   if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
   return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
-  if(k==='b')return`<span style="display:grid">${ic('book')}</span>`;
-  if(k==='p')return isFolder(id)?`<span style="color:${proj(id)?.color};display:grid">${ic('folder')}</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
+  if(k==='b')return`<span class="emo">📖</span>`;
+  if(k==='p')return isFolder(id)?`<span class="emo">📁</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return ic({inbox:'inbox',today:'today',upcoming:'upcoming',search:'search',filters:'filters',completed:'report',projects:'folder',calendar:'calgrid',reminders:'bell',exams:'target',books:'book'}[v]||'list')}
+  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚'}[v]||'📄'}</span>`}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -1026,17 +1081,17 @@ function renderSide(){const c=counts();
     <button class="ibtn" data-a="settings" aria-label="Settings">${ic('gear')}</button>
     <button class="ibtn" data-a="toggleSide" aria-label="Close sidebar">${ic('side')}</button></div>
   <div class="side-scroll">
-    <button class="add-task-side" data-a="quickAdd"><span class="plus">${ic('plus')}</span>Add task</button>
+    <button class="add-task-side" data-a="quickAdd"><span class="ico">📝</span>Add task</button>
     ${navItem('search','Search')}${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
     ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}
     <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
     <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
     ${S.ui.projOpen?projTree(null,0,c)+(c.inbox?navItem('inbox','No subject',c.inbox):''):''}
-    ${S.ui.projOpen&&!S.projects.some(x=>!x.archived)?`<div class="nav-i" role="button" tabindex="0" data-a="upscPreset"><span class="ico">${ic('plus')}</span><span class="lab">Add UPSC subjects</span></div>`:''}
+    ${S.ui.projOpen&&!S.projects.some(x=>!x.archived)?`<div class="nav-i" role="button" tabindex="0" data-a="upscPreset"><span class="ico">➕</span><span class="lab">Add UPSC subjects</span></div>`:''}
     <div class="side-foot">
-      <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">${ic('edit')}</span><span class="lab">Manage subjects</span></div>
-      <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">${ic('gear')}</span><span class="lab">Settings</span></div>
+      <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">✏️</span><span class="lab">Manage subjects</span></div>
+      <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">⚙️</span><span class="lab">Settings</span></div>
     </div>
   </div>`}
 
@@ -1308,22 +1363,20 @@ function taskCalHTML(){
   S.tasks.forEach(t=>{if(t.due)slot(t.due).t.push(t)});S.reminders.forEach(r=>{if(!r.done)slot(r.date).r.push(r)});S.exams.forEach(e=>slot(e.date).e.push(e));
   let cells='';
   for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const x=iso(d),o=by[x]||{t:[],r:[],e:[]},na=o.t.filter(open).length;
-    cells+=`<button class="cell tc ${d.getMonth()!==first.getMonth()?'out':''} ${x===T()?'today':''} ${x===sel?'sel':''}" data-a="calDay" data-d="${x}" aria-label="${DAYS[d.getDay()]} ${d.getDate()} ${MONF[d.getMonth()]}${o.t.length?', '+o.t.length+' task'+(o.t.length===1?'':'s'):''}">
-      <span class="dn">${d.getDate()}</span>${o.t.length?`<span class="cnt">${na||'✓'}</span>`:''}
-      <span class="dots">${o.e.length?'<i class="ex"></i>':''}${o.r.length?'<i class="rm"></i>':''}${o.t.slice(0,4).map(t=>`<i style="--pc:${t.done?'var(--faint)':PRI[t.priority]}"></i>`).join('')}</span>
-      <span class="cchips">${o.e.slice(0,1).map(e=>`<span class="chip ex">${esc(e.name)}</span>`).join('')}${o.t.slice(0,2).map(t=>`<span class="chip ${t.done?'done':''}" style="--pc:${PRI[t.priority]}">${esc(t.title)}</span>`).join('')}${o.t.length>2?`<span class="muted" style="font-size:11px">+${o.t.length-2} more</span>`:''}</span></button>`;
+    cells+=`<button class="nkc ${d.getMonth()!==first.getMonth()?'out':''} ${x===T()?'today':''} ${x===sel?'sel':''}" data-a="calDay" data-d="${x}" aria-label="${DAYS[d.getDay()]} ${d.getDate()} ${MONF[d.getMonth()]}${o.t.length?', '+o.t.length+' task'+(o.t.length===1?'':'s'):''}">
+      <span class="dn">${d.getDate()}</span>${o.t.length?`<span class="ct">${na||'✓'}</span>`:'<span></span>'}${o.e.length?'<i class="dot ex"></i>':o.r.length?'<i class="dot"></i>':''}</button>`;
     if(i===34&&new Date(start.getTime()+35*864e5).getMonth()!==first.getMonth())break}
   const dh=[...Array(7)].map((_,i)=>`<div class="dh">${DAYS[(i+ws)%7].slice(0,3)}</div>`).join('');
   const o=by[sel]||{t:[],r:[],e:[]},sd=pd(sel),n=diffD(sel,T());
-  const panel=`<div class="dpanel"><div class="day-h">${DAYS[sd.getDay()]}, ${sd.getDate()} ${MONF[sd.getMonth()]} <small>${n===0?'· Today':n===1?'· Tomorrow':n===-1?'· Yesterday':''}</small><span class="sp"></span></div>
-    ${o.e.map(e=>`<div class="row-i" data-a="go" data-v="exams"><span class="ico" style="display:grid;color:var(--p1)">${ic('target')}</span><span class="lab"><b>${esc(e.name)}</b> <span class="muted">exam day</span></span></div>`).join('')}
+  const panel=`<div class="day-h">${DAYS[sd.getDay()]}, ${sd.getDate()} ${MONF[sd.getMonth()]} <small>${n===0?'· Today':n===1?'· Tomorrow':n===-1?'· Yesterday':''}</small><span class="sp"></span></div>
+    ${o.e.map(e=>`<div class="row-i" data-a="go" data-v="exams"><span class="ico" style="display:grid">🎯</span><span class="lab"><b>${esc(e.name)}</b> <span class="muted">exam day</span></span></div>`).join('')}
     ${o.t.length?`<ul class="tl">${sortTasks(o.t,{sort:'date',dir:'asc'}).map(t=>taskRow(t)).join('')}</ul>`:`<p class="muted" style="margin:10px 0">No tasks on this day.</p>`}
     ${addRow({due:sel})}
     ${o.r.length?`<div class="grp-h" style="margin-top:12px">Reminders</div><ul class="tl">${o.r.map(remRow).join('')}</ul>`:''}
-    <button class="addrow" data-a="editRem" data-d="${sel}"><span class="plus">${ic('plus')}</span>Add reminder</button></div>`;
-  return`<div class="strip-h"><span class="mon">${MONF[first.getMonth()]} ${first.getFullYear()}</span>
+    <button class="addrow" data-a="editRem" data-d="${sel}"><span class="plus">${ic('plus')}</span>Add reminder</button>`;
+  return`<div class="nkcal"><div class="nkcard"><div class="nkh"><span class="mon">${MONF[first.getMonth()]} ${first.getFullYear()}</span>
     <button class="ibtn" data-a="calNav" data-n="-1" aria-label="Previous month">${ic('chevL')}</button><button class="pill" data-a="calNav" data-n="0">Today</button><button class="ibtn" data-a="calNav" data-n="1" aria-label="Next month">${ic('chev')}</button></div>
-    <div class="calwrap"><div class="cal tcal">${dh}${cells}</div></div>${panel}`}
+    <div class="nkg">${dh}${cells}</div></div><div class="nkcard">${panel}</div></div>`}
 
 /* ================= main render ================= */
 function render(){
@@ -1353,7 +1406,7 @@ function render(){
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
-  const wide=(d.layout!=='list'&&listy)||v==='calendar';
+  const wide=(d.layout!=='list'&&listy);
   const dot=k==='p'&&!isFolder(id)?`<span style="color:${proj(id)?.color};font-size:22px">#</span>`:'';
   $('content').innerHTML=`<div class="wrap ${wide?'wide':''}"><h1>${dot}${esc(title)}</h1>${sub}${body}</div>`;
   const qi=$('q');if(qi&&document.activeElement!==qi&&v==='search'){qi.focus();qi.setSelectionRange(qi.value.length,qi.value.length)}
@@ -1617,14 +1670,13 @@ function drawSettings(){
     $('stReset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
       snap();S=sampleData();S.tasks=[];S.log=[];S.ui.upStart=null;applyTheme();closeModal();commit('All data reset',true)}}
   else{
-    const dark=isDarkNow(),sync=S.settings.syncTheme!==false,mode=S.settings.theme,cur=S.settings.color||'todoist';
-    const card=t=>{const v=themeVars(t.id,dark);return`<button class="tcard ${t.id===cur?'on':''}" data-ct="${t.id}" aria-pressed="${t.id===cur}" aria-label="${t.name} theme" style="--pacc:${v.acc};--pbg:${v.bg};--pside:${v.side};--pline:${v.line}"><span class="ps"><i></i><i></i><i></i><i></i></span><span class="pm"><span class="pn"><span>${t.name}</span>${t.id===cur?ic('check'):''}</span><span class="pl"><b></b><u></u></span><span class="pl"><b></b><u class="s"></u></span></span></button>`};
+    const dark=isDarkNow(),sync=S.settings.syncTheme!==false,mode=S.settings.theme,cur=THEMES.some(x=>x.id===S.settings.color)?S.settings.color:'classic';
+    const card=t=>{const v=themeVars(t.id,dark);return`<button class="tcard ${t.id===cur?'on':''}" data-ct="${t.id}" aria-pressed="${t.id===cur}" aria-label="${t.name} theme" style="--pacc:${v.btn};--pbg:${v.bg};--pside:${v.sb};--pline:${v.line}"><span class="ps"><i></i><i></i><i></i><i></i></span><span class="pm"><span class="pn"><span>${t.name}</span>${t.id===cur?ic('check'):''}</span><span class="pl"><b></b><u></u></span><span class="pl"><b></b><u class="s"></u></span></span></button>`};
     B.innerHTML=`<p class="muted" style="margin:0 0 12px;font-size:13.5px">Personalize TaskFlow with colors to match your style, mood, and personality.</p>
     <div class="trow"><button class="tgl ${sync?'on':''}" id="thSync" role="switch" aria-checked="${sync}" aria-label="Sync theme"></button><span>Sync theme across your devices</span></div>
     <div class="h3">Appearance</div>
     <div class="pillseg" id="thMode">${[['light','Light'],['dark','Dark'],['system','System']].map(([k,n])=>`<button data-mode="${k}" class="${mode===k?'on':''}">${n}</button>`).join('')}</div>
-    <div class="h3">Your themes</div><div class="tcards">${THEMES.slice(0,3).map(card).join('')}</div>
-    <div class="h3">More themes</div><div class="tcards">${THEMES.slice(3).map(card).join('')}</div>`;
+    <div class="h3">Colour themes</div><div class="tcards">${THEMES.map(card).join('')}</div>`;
     B.querySelector('#thSync').onclick=()=>{S.settings.syncTheme=!sync;if(S.settings.syncTheme)setThemePrefs({});else save();drawSettings()};
     B.querySelector('#thMode').onclick=e=>{const b=e.target.closest('[data-mode]');if(!b)return;setThemePrefs({theme:b.dataset.mode});drawSettings()};
     B.querySelectorAll('[data-ct]').forEach(c=>c.onclick=()=>{setThemePrefs({color:c.dataset.ct});drawSettings()})}}
