@@ -473,6 +473,10 @@ button:active{transform:scale(.97)}
 @media(max-width:860px){.nkcal{grid-template-columns:1fr}}
 @media(max-width:860px){.wrap{padding:8px 16px 120px}}
 @media(max-width:560px){.nkcard{padding:12px}.nkc{padding:2px 3px}.nkc .dn{font-size:11px}}
+.chaps{list-style:none;margin:0 0 10px;padding:0}.chap{display:flex;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid var(--line)}
+.chap label{display:flex;align-items:center;gap:8px;flex:1;min-width:0}.chap .cn{font-family:var(--f-mono);font-size:12px;color:var(--muted);min-width:26px}
+.chap .cin{flex:1;min-width:0;background:none;border:0;padding:6px 4px;border-radius:6px}.chap .cin:focus{background:var(--raise);outline:0}
+.chap.done .cin{text-decoration:line-through;color:var(--faint)}.chapadd{display:flex;gap:8px}.chapadd .inp{flex:1;min-width:0}
 </style>
 </head>
 <body>
@@ -1238,8 +1242,21 @@ function upscPreset(){snap();
 /* ================= books ================= */
 function booksHTML(){
   const rows=S.books.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>{const ts=S.tasks.filter(t=>t.book===b.id),dn=ts.filter(t=>t.done).length,sj=b.subject&&proj(b.subject)?proj(b.subject).name:'';
-    return`<div class="row-i" data-a="go" data-v="b:${b.id}"><span class="ico" style="display:grid;color:var(--muted)">${ic('book')}</span><span class="lab">${esc(b.name)}<small class="muted" style="display:block;font-size:12px">${[b.author,sj].filter(Boolean).map(esc).join(' · ')}</small></span><span class="n">${ts.length?dn+'/'+ts.length+' done':''}</span><button class="ibtn" data-a="editBook" data-id="${b.id}" aria-label="Edit book">${ic('edit')}</button></div>`}).join('');
+    return`<div class="row-i" data-a="go" data-v="b:${b.id}"><span class="ico" style="display:grid;color:var(--muted)">${ic('book')}</span><span class="lab">${esc(b.name)}<small class="muted" style="display:block;font-size:12px">${[b.author,sj].filter(Boolean).map(esc).join(' · ')}</small></span><span class="n">${[(b.chapters||[]).length?(b.chapters.filter(c=>c.done).length+'/'+b.chapters.length+' ch'):'',ts.length?dn+'/'+ts.length+' done':''].filter(Boolean).join(' · ')}</span><button class="ibtn" data-a="editBook" data-id="${b.id}" aria-label="Edit book">${ic('edit')}</button></div>`}).join('');
   return`<div class="hdr2">Books <button class="pill" data-a="editBook">${ic('plus')} Add book</button></div>`+(rows||empty('project','No books yet','Add the books you study, then link tasks to a book from the task window.',`<button class="addrow" data-a="editBook"><span class="plus">${ic('plus')}</span>Add book</button>`))}
+function chapHTML(b){const cs=b.chapters||[],dn=cs.filter(c=>c.done).length;
+  return`<div class="nkcard chapcard" style="margin:10px 0 16px"><div class="nkh"><span class="mon" style="font-size:16px">📑 Chapters</span><span class="muted">${cs.length?dn+'/'+cs.length+' done':'none yet'}</span></div>
+  ${cs.length?`<ul class="tl chaps">${cs.map((c,i)=>`<li class="chap ${c.done?'done':''}"><label><input type="checkbox" data-chk="${c.id}" ${c.done?'checked':''}><span class="cn">${i+1}.</span><input class="cin" data-cid="${c.id}" value="${esc(c.name)}" maxlength="160" aria-label="Chapter name"></label><button class="ibtn" data-a="chapDel" data-id="${b.id}" data-c="${c.id}" aria-label="Delete chapter">${ic('x')}</button></li>`).join('')}</ul>`:''}
+  <div class="chapadd"><input class="inp" id="chN" data-bk="${b.id}" placeholder="Add chapter name and press Enter (paste many lines to add all)" maxlength="2000" autocomplete="off"><button class="btn pri" data-a="chapAdd" data-id="${b.id}">Add</button></div></div>`}
+function addChapters(bid,text){const b=book(bid);if(!b)return;const names=String(text).split(/\r?\n/).map(x=>x.replace(/^\s*(\d+[.)]|[-*•])\s+/,'').trim()).filter(Boolean);if(!names.length)return;
+  snap();b.chapters=b.chapters||[];names.forEach(n=>b.chapters.push({id:uid(),name:n.slice(0,160),done:false}));commit(names.length+' chapter'+(names.length>1?'s':'')+' added',true);
+  setTimeout(()=>{const i=$('chN');if(i)i.focus()},0)}
+document.addEventListener('keydown',e=>{if(e.target.id==='chN'&&e.key==='Enter'){e.preventDefault();addChapters(e.target.dataset.bk,e.target.value)}
+  else if(e.target.classList&&e.target.classList.contains('cin')&&e.key==='Enter')e.target.blur()});
+document.addEventListener('paste',e=>{if(e.target.id!=='chN')return;const t=(e.clipboardData||window.clipboardData).getData('text');if(/\n/.test(t.trim())){e.preventDefault();addChapters(e.target.dataset.bk,t)}});
+document.addEventListener('change',e=>{const t=e.target;if(!view.startsWith('b:'))return;const b=book(view.slice(2));if(!b)return;
+  if(t.dataset&&t.dataset.chk){const c=(b.chapters||[]).find(x=>x.id===t.dataset.chk);if(c){c.done=t.checked;commit()}}
+  else if(t.dataset&&t.dataset.cid){const c=(b.chapters||[]).find(x=>x.id===t.dataset.cid),v=t.value.trim();if(c&&v&&v!==c.name){c.name=v;commit()}else if(c)t.value=c.name}});
 function editBook(id){const b=id?book(id):{name:'',author:'',subject:'',notes:''};
   const subs=S.projects.filter(x=>!x.archived&&!x.folder);
   showModal(`<form id="bf"><div class="mh"><b>${id?'Edit book':'Add book'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
@@ -1397,7 +1414,8 @@ function render(){
     else if(d.layout==='board')body=boardHTML(v,L);
     else if(v==='upcoming')body=upcomingHTML(L);
     else body=listHTML(v,L);
-    if(['inbox','today'].includes(v)||k==='p')body=sampleBanner()+body;}
+    if(['inbox','today'].includes(v)||k==='p')body=sampleBanner()+body;
+    if(k==='b'&&book(id))body=chapHTML(book(id))+body;}
   else if(v==='completed'){body=completedHTML();sub=`<div class="subline">Your activity across all subjects</div>`}
   else if(v==='calendar')body=taskCalHTML();
   else if(v==='reminders')body=remindersHTML();
@@ -1720,6 +1738,8 @@ document.addEventListener('click',e=>{
   case'upscPreset':stop();upscPreset();break;
   case'editFolder':stop();editProject(null,null,true);break;
   case'editBook':stop();editBook(id);break;
+  case'chapAdd':{stop();const i=$('chN');if(i){addChapters(id,i.value)}break}
+  case'chapDel':{stop();const bk=book(id);if(bk){snap();bk.chapters=(bk.chapters||[]).filter(c=>c.id!==b.dataset.c);commit('Chapter removed',true)}break}
   case'editRem':stop();editRem(id,b.dataset.d);break;
   case'remToggle':stop();toggleRem(id);break;
   case'remDel':{stop();snap();S.reminders=S.reminders.filter(x=>x.id!==id);commit('Reminder deleted',true);break}
