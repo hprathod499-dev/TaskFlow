@@ -478,6 +478,17 @@ button:active{transform:scale(.97)}
 .chap .cin{flex:1;min-width:0;background:none;border:0;padding:6px 4px;border-radius:6px}.chap .cin:focus{background:var(--raise);outline:0}
 .chap.done .cin{text-decoration:line-through;color:var(--faint)}.chapadd{display:flex;gap:8px}.chapadd .inp{flex:1;min-width:0}
 .task,.nav-i,.row-i,.exc,.chap,.card{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}.cin{-webkit-user-select:text;user-select:text}
+/* ---------- clean UI: no divider lines, no visible scrollbars ---------- */
+*{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{display:none;width:0;height:0}
+.navhr{display:none}.side-top,.side-foot{border:0}
+.grp-h,.day-h,.hdr2,.row-i,.logrow,.mh,.switch,.sub,.sideblk,.pin,.sph,.chap,.strip,.bars,.snav{border-bottom:0!important}
+.task{border:0;background:var(--card);box-shadow:none}
+.task:hover{background:var(--hover)}
+.nkcard,.pill,.nkc,.nkg .dh{border-color:transparent}
+.nkc{background:var(--raise)}.nkc.out{background:transparent}.nkc.sel{border-color:var(--strong)}
+.nkcard{border:0}
+.chaps .chap{background:transparent}
+.cal,.cell,.cal .dh{border-color:transparent}
 </style>
 </head>
 <body>
