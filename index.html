@@ -335,6 +335,17 @@ body{margin:0}
 .lcard .btn{padding:11px 14px;font-size:14px}
 .lcard .linkbtn{color:var(--muted);font-size:13px;padding:6px}
 .lcard .linkbtn:hover{color:var(--fg)}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:10px;background:#fff;color:#3c4043;border:1px solid #dadce0;border-radius:6px;padding:11px 16px;font-weight:600;font-size:14px;width:100%}
+.gbtn:hover{background:#f8f9fa}
+.gbtn svg{width:18px;height:18px;flex:none}
+.whobtn{display:flex;align-items:center;gap:8px;flex:1;min-width:0;text-align:left;border-radius:8px;padding:3px 6px;margin-left:-6px}
+.whobtn:hover{background:var(--hover)}
+.avatar svg{width:15px;height:15px}
+.avatar.big{width:64px;height:64px;font-size:26px;margin:0 auto 10px}
+.avatar.big svg{width:30px;height:30px}
+.who.unset{color:var(--muted);font-weight:500}
+.pcard h2{font-family:var(--f-display);font-size:22px;margin:6px 0 2px;text-wrap:balance}
+.quote{color:var(--muted);font-style:italic}
 #loginErr{color:var(--p1);font-size:13px;min-height:1em}
 </style>
 </head>
@@ -354,8 +365,7 @@ body{margin:0}
 <button class="fab" data-a="quickAdd" aria-label="Add task" id="fab"></button>
 <div id="login" hidden><div class="lcard"><div class="lb"><i></i>TaskFlow</div>
 <p>Sign in to keep your tasks in sync across your phone and computer.</p>
-<button class="btn pri" data-a="signIn">Continue with Google</button>
-<button class="linkbtn" data-a="skipLogin">Use on this device only</button>
+<button class="gbtn" data-a="signIn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Sign in with Google</span></button>
 <div id="loginErr" role="alert"></div></div></div>
 <div id="modalRoot"></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo" hidden>Undo</button></div>
@@ -383,7 +393,11 @@ const IC={
  board:'M4 5h4v14H4zM10 5h4v10h-4zM16 5h4v7h-4z', calgrid:'M4 5h16v14H4zM4 10h16M4 14.5h16M9.3 10v9M14.6 10v9',
  edit:'M4 20h4L19 9l-4-4L4 16z', copy:'M8 8h11v11H8zM5 16V5h11', check:'M5 12l5 5 9-10',
  sub:'M6 4v9a3 3 0 0 0 3 3h10M16 13l3 3-3 3', gear:'M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6zM12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1',
- folder:'M4 6h6l2 2h8v11H4z', arrow:'M5 12h14M13 6l6 6-6 6', archive:'M4 5h16v4H4zM6 9v10h12V9M10 13h4'
+ folder:'M4 6h6l2 2h8v11H4z', arrow:'M5 12h14M13 6l6 6-6 6', archive:'M4 5h16v4H4zM6 9v10h12V9M10 13h4',
+ user:'M12 12a4 4 0 1 0 0-8a4 4 0 1 0 0 8zM5 20c0-4 3-6 7-6s7 2 7 6',
+ sun:'M12 8a4 4 0 1 0 0 8a4 4 0 1 0 0-8zM12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4',
+ moon:'M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z',
+ auto:'M12 3a9 9 0 1 0 0 18zM12 3v18'
 };
 const ic=(n,c='')=>`<svg class="i ${c}" viewBox="0 0 24 24"${n==='more'?' style="stroke-width:3"':''}><path d="${IC[n]}"/></svg>`;
 
@@ -484,7 +498,7 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const PRI={1:'var(--p1)',2:'var(--p2)',3:'var(--p3)',4:'var(--p4)'};
 
 function sampleData(){
-  return{v:2,user:{name:'Me'},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],
+  return{v:2,user:{name:''},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],
     display:{},recent:['today'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}}}
 function demoData(){
   const P=(id,name,color,parent=null,fav=false)=>({id,name,color,parent,fav,archived:false,order:0});
@@ -528,7 +542,6 @@ const FB_CFG={
   appId:"1:198190809879:web:2b7f199f2ead101eaced52"
 };
 const CLIENT=Math.random().toString(36).slice(2,12);
-const SKIP_KEY='taskflow.offline';
 const cloud={user:null,ref:null,first:true,timer:null,status:'local',online:true};
 let auth=null,db=null;
 const sig=()=>{const{ui,display,recent,settings,updatedAt,dirty,...rest}=S;return JSON.stringify(rest)};
@@ -562,13 +575,13 @@ function attach(u){
     const v=snap.val();
     if(cloud.first){
       cloud.first=false;
-      if(v==null||!v.json){if(S.user.name==='Me'&&u.displayName){S.user.name=u.displayName.split(' ')[0]}pushNow();render();return}
+      if(v==null||!v.json){if(!nameSet()&&u.displayName){S.user.name=u.displayName.split(' ')[0]}pushNow();render();maybeWelcome(true);return}
       let remote;try{remote=JSON.parse(v.json)}catch(e){setStatus('error');return}
       if(!remote||remote.v!==2||!Array.isArray(remote.tasks)){setStatus('error');return}
       if(S.dirty){S=mergeData(S,remote);S.dirty=true;S.updatedAt=Date.now();lastSig=sig();saveLocal();pushNow()}
       else adopt(remote);
       if(!validView(view))view='today';
-      render();setStatus('synced');return}
+      render();setStatus('synced');maybeWelcome(false);return}
     if(!v||!v.json||v.writer===CLIENT||S.dirty)return;
     try{adopt(JSON.parse(v.json));render();setStatus('synced')}catch(e){}
   },err=>{console.error(err);setStatus('error')});
@@ -594,17 +607,56 @@ function doSignOut(){
   const a=auth;detach();
   S=sampleData();S.tasks=[];S.log=[];S.projects=[];S.sections=[];S.labels=[];S.filters=[];S.recent=['today'];S.dirty=false;lastSig=sig();saveLocal();
   closeModal();view='today';location.hash='today';setStatus('local');render();a.signOut()}
+const GLOGO='<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>';
+const nameSet=()=>!!(S.user.name&&S.user.name!=='Me');
+const dispName=()=>nameSet()?S.user.name:'Add your name';
+const avatarInner=()=>nameSet()?esc(S.user.name.trim()[0].toUpperCase()):ic('user');
+const QUOTES=['Small steps every day add up to big results.','Clear list, clear mind. One task at a time.','Start with the task you are avoiding. The rest gets easier.','Progress, not perfection.','Plan the day, then enjoy it.','Done is better than perfect.','Focus on what matters most today.','You do not have to do everything today. Just the next thing.','Finish one thing well, then pick the next.','Consistency beats intensity.','Good work starts with a good plan.','A little progress each day is still progress.'];
+const quote=()=>QUOTES[Math.floor(Date.now()/864e5)%QUOTES.length];
+const greeting=()=>{const h=new Date().getHours();return h<12?'Good morning':h<17?'Good afternoon':'Good evening'};
+const dueToday=()=>S.tasks.filter(t=>!t.done&&t.due&&t.due<=T()).length;
+const dueLine=()=>{const n=dueToday();return n?`You have ${n} task${n===1?'':'s'} due today.`:'Nothing is due today. Enjoy the calm.'};
+function maybeWelcome(isNew){if(!cloud.welcome)return;cloud.welcome=false;showWelcome(isNew)}
+function showWelcome(isNew){
+  showModal(`<div class="mb pcard" style="text-align:center;padding:30px 22px 24px">
+    <div class="avatar big">${avatarInner()}</div>
+    <h2>${isNew?'Welcome to TaskFlow':'Welcome back'}${nameSet()?', '+esc(S.user.name):''}!</h2>
+    <p class="muted" style="margin:6px 0 0">${greeting()}. ${isNew?'Your workspace is ready. Tap the + button to add your first task.':dueLine()}</p>
+    <p class="quote" style="margin:10px 0 20px">“${quote()}”</p>
+    <button class="btn pri" data-a="closeModal" style="padding:9px 26px">Let’s go</button>
+    ${nameSet()?'':'<p class="muted" style="font-size:12px;margin:14px 0 0">Tap your profile icon to add your name.</p>'}</div>`)}
+function profileModal(){
+  const u=cloud.user,done=S.log.filter(e=>iso(new Date(e.at))===T()).length;
+  const th=S.settings.theme;
+  const seg=[['light','Light','sun'],['dark','Dark','moon'],['system','Auto','auto']].map(([k,n,i])=>`<button data-th="${k}" class="${th===k?'on':''}">${ic(i)}${n}</button>`).join('');
+  showModal(`<div class="mh"><b>Profile</b><button class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div>
+  <div class="mb pcard" style="text-align:center">
+    <div class="avatar big" id="prAv">${avatarInner()}</div>
+    <h2 id="prH">${greeting()}${nameSet()?', '+esc(S.user.name):''}!</h2>
+    ${u?`<div class="muted" style="font-size:13px">${esc(u.email||'')}</div>`:''}
+    <p class="muted" style="margin:10px 0 0">${dueLine()}${done?` ${done} done so far today.`:''}</p>
+    <p class="quote" style="margin:6px 0 16px">“${quote()}”</p>
+    <div class="fld" style="text-align:left"><label for="prN">Your name</label><input class="inp" id="prN" placeholder="Add your name" value="${esc(nameSet()?S.user.name:'')}" maxlength="40" autocomplete="off"></div>
+    <div style="text-align:left"><div style="font-weight:600;font-size:13px;margin-bottom:6px">Appearance</div><div class="seg" id="prTh">${seg}</div></div>
+  </div>
+  <div class="mf" style="justify-content:space-between">${u?'<button class="btn danger" data-a="signOut">Sign out</button>':`<button class="gbtn" data-a="signIn" style="width:auto;padding:8px 14px">${GLOGO}<span>Sign in with Google</span></button>`}<button class="btn pri" data-a="closeModal">Done</button></div>`);
+  const m=document.querySelector('.modal');
+  m.querySelector('#prN').addEventListener('change',e=>{S.user.name=e.target.value.trim();save();render();
+    m.querySelector('#prH').textContent=greeting()+(nameSet()?', '+S.user.name:'')+'!';m.querySelector('#prAv').innerHTML=avatarInner()});
+  m.querySelector('#prN').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+  m.querySelector('#prTh').addEventListener('click',e=>{const b=e.target.closest('[data-th]');if(!b)return;
+    S.settings.theme=b.dataset.th;applyTheme();save();m.querySelectorAll('#prTh button').forEach(x=>x.classList.toggle('on',x===b))})}
 function accountBlock(){const u=cloud.user;
   return `<div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Account</div>`+(u
    ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Signed in as <b>${esc(u.email||u.displayName||'')}</b>. ${syncLabel()}.</p><button class="btn sec" data-a="signOut">Sign out</button>`
-   :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="btn pri" data-a="signIn">Sign in with Google</button>`)}
+   :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="gbtn" data-a="signIn">${GLOGO}<span>Sign in with Google</span></button>`)}
 function initCloud(){
   try{firebase.initializeApp(FB_CFG);auth=firebase.auth();db=firebase.database()}
-  catch(e){console.warn('Firebase unavailable',e);setStatus('local');return}
+  catch(e){console.warn('Firebase unavailable',e);setStatus('local');showLogin();showLoginErr({message:'Could not reach the sign-in service. Check your internet connection and reload this page.'});return}
   auth.getRedirectResult().catch(showLoginErr);
   auth.onAuthStateChanged(u=>{
-    if(u){hideLogin();try{localStorage.removeItem(SKIP_KEY)}catch(_){}detach();attach(u);render()}
-    else{detach();setStatus('local');let skip=false;try{skip=localStorage.getItem(SKIP_KEY)==='1'}catch(_){}if(!skip)showLogin();render()}})}
+    if(u){cloud.welcome=!document.getElementById('login').hidden;hideLogin();detach();attach(u);render()}
+    else{detach();setStatus('local');showLogin();render()}})}
 
 function applyTheme(){const t=S.settings.theme;if(t==='system')delete document.documentElement.dataset.theme;else document.documentElement.dataset.theme=t}
 applyTheme();
@@ -707,7 +759,7 @@ function renderSide(){const c=counts();
     ...S.labels.filter(l=>l.fav).map(l=>navItem('l:'+l.id,l.name,c.label(l.id)||'')),
     ...S.filters.filter(f=>f.fav).map(f=>navItem('f:'+f.id,f.name,c.filter(f.id)||''))].join('');
   $('side').innerHTML=`
-  <div class="side-top"><span class="avatar">${esc((S.user.name||'U')[0].toUpperCase())}</span><span class="who">${esc(S.user.name)}<small id="syncStat">${syncLabel()}</small></span>
+  <div class="side-top"><button class="whobtn" data-a="profile" aria-label="Open profile"><span class="avatar">${avatarInner()}</span><span class="who ${nameSet()?'':'unset'}">${esc(dispName())}<small id="syncStat">${syncLabel()}</small></span></button>
     <button class="ibtn" data-a="settings" aria-label="Settings">${ic('gear')}</button>
     <button class="ibtn" data-a="toggleSide" aria-label="Close sidebar">${ic('side')}</button></div>
   <div class="side-scroll">
@@ -1100,7 +1152,7 @@ function displayModal(){const v=view,d=disp(v),isP=v.startsWith('p:');
   m.addEventListener('change',e=>{const map={dsG:'group',dsS:'sort',dsO:'dir',dsP:'fpri',dsL:'flabel'};if(map[e.target.id])setDisp(v,{[map[e.target.id]]:e.target.value})})}
 
 function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
-  <div class="fld"><label for="stN">Your name</label><input class="inp" id="stN" value="${esc(S.user.name)}"></div>
+  <div class="fld"><label for="stN">Your name</label><input class="inp" id="stN" placeholder="Add your name" value="${esc(nameSet()?S.user.name:'')}"></div>
   <div class="switch"><label for="stT">Theme</label><select id="stT">${[['system','Match system'],['dark','Dark'],['light','Light']].map(([a,b])=>`<option value="${a}" ${S.settings.theme===a?'selected':''}>${b}</option>`).join('')}</select></div>
   <div class="switch"><label for="stW">Week starts on</label><select id="stW"><option value="1" ${S.settings.weekStart===1?'selected':''}>Monday</option><option value="0" ${S.settings.weekStart===0?'selected':''}>Sunday</option></select></div>
   ${accountBlock()}
@@ -1112,7 +1164,7 @@ function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class
   <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Shortcuts</div>
   <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / Inbox · <b>Esc</b> close</p></div>
   <div class="mf"><button class="btn pri" data-a="closeModal">Done</button></div>`);
-  $('stN').onchange=e=>{S.user.name=e.target.value.trim()||'Me';commit()};
+  $('stN').onchange=e=>{S.user.name=e.target.value.trim();commit()};
   $('stT').onchange=e=>{S.settings.theme=e.target.value;applyTheme();commit()};
   $('stW').onchange=e=>{S.settings.weekStart=+e.target.value;S.ui.upStart=null;commit()};
   $('stCopy').onclick=async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);$('stMsg').textContent='Backup copied. Paste it into a note or email to keep it.'}catch(e){$('stBox').hidden=false;$('stBox').value=txt;$('stBox').select();$('stMsg').textContent='Copy the selected text above.'}};
@@ -1155,7 +1207,7 @@ document.addEventListener('click',e=>{
   case'closeModal':closeModal();break;
   case'signIn':doSignIn();break;
   case'signOut':doSignOut();break;
-  case'skipLogin':try{localStorage.setItem(SKIP_KEY,'1')}catch(_){}hideLogin();break;
+  case'profile':$('app').classList.remove('drawer');profileModal();break;
   case'editProject':stop();editProject(id);break;
   case'editLabel':stop();editLabel(id);break;
   case'editFilter':stop();editFilter(id);break;
