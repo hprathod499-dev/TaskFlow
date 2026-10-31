@@ -483,6 +483,8 @@ button:active{transform:scale(.97)}
 .rv.done{background:var(--strong);border-color:var(--strong);color:var(--accent-fg)}.rv.late{border-color:var(--p1);color:var(--p1)}.rv.due{border-color:var(--strong);color:var(--accent)}
 .chap.tp.done .cin{text-decoration:none;color:var(--fg)}
 @media(max-width:560px){.syl-sum{grid-template-columns:1fr}.chap.tp{flex-wrap:wrap}}
+.rv.add{padding:2px 8px;color:var(--accent);border-style:dashed}.revs{flex-wrap:wrap;justify-content:flex-end}.pln{flex:1;min-width:0;padding:6px 4px}
+.chap.done .pln{text-decoration:line-through;color:var(--faint)}
 </style>
 </head>
 <body>
@@ -671,12 +673,12 @@ function demoData(){
     t('Note down doubts for mentor call',{project:'inbox'}),
   ];
   tasks.forEach((x,i)=>x.order=i);
-  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],books:[],reminders:[],exams:[],topics:[],
+  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],books:[],reminders:[],exams:[],topics:[],plan:[],
     display:{},recent:['upcoming','today','p:matrix','p:isec','p:society','p:geography'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}};
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||S.v!==2)S=sampleData();
-function ensure(x){['books','reminders','exams','topics'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
+function ensure(x){['books','reminders','exams','topics','plan'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
 ensure(S);
 /* ================= cloud sync (Firebase Realtime Database) ================= */
 const FB_CFG={
@@ -711,7 +713,7 @@ function mergeData(local,remote){
   const lt=(local.tasks||[]).filter(t=>!t.sample);
   const out=remote;
   out.tasks=byId(remote.tasks,lt);
-  ['projects','sections','labels','filters','books','reminders','exams','topics'].forEach(k=>out[k]=byId(remote[k],local[k]));
+  ['projects','sections','labels','filters','books','reminders','exams','topics','plan'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
@@ -897,7 +899,7 @@ async function driveRestore(id){
   snap();
   let added=0;
   const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
-  ensure(S);['projects','sections','labels','filters','books','reminders','exams','topics'].forEach(k=>addMissing(k,lv[k]));
+  ensure(S);['projects','sections','labels','filters','books','reminders','exams','topics','plan'].forEach(k=>addMissing(k,lv[k]));
   addMissing('tasks',(lv.tasks||[]).filter(t=>!oldDone(t,c)&&!t.sample));
   addMissing('log',(lv.log||[]).filter(e=>e.at>=c));
   S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();
@@ -1009,17 +1011,17 @@ const hashOf=v=>v.replace(':','-');
 const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plfb])-(.+)$/);return m?m[1]+':'+m[2]:h};
 function go(v){if(location.hash.slice(1)!==hashOf(v))location.hash=hashOf(v);else{view=v;render()}$('app').classList.remove('drawer')}
 window.addEventListener('hashchange',()=>{view=viewOf(location.hash);if(!validView(view))view='today';track(view);render();$('content').scrollTop=0});
-function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','syllabus'].includes(v)}
+function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','syllabus','plan'].includes(v)}
 function track(v){if(v==='search')return;S.recent=[v,...S.recent.filter(x=>x!==v)].slice(0,8);save()}
 function viewName(v){const[k,id]=v.split(':');
   if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
-  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',syllabus:'Syllabus'}[v]}
+  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',syllabus:'Syllabus',plan:'Daily plan'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
   if(k==='b')return`<span class="emo">📖</span>`;
   if(k==='p')return isFolder(id)?`<span class="emo">📁</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',syllabus:'🧭'}[v]||'📄'}</span>`}
+  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',syllabus:'🧭',plan:'🕐'}[v]||'📄'}</span>`}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -1094,7 +1096,7 @@ function renderSide(){const c=counts();
     <button class="add-task-side" data-a="quickAdd"><span class="ico">📝</span>Add task</button>
     ${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
     ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}
-    <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('syllabus','Syllabus')}${navItem('books','Manage Book')}
+    <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('plan','Daily plan')}${navItem('syllabus','Syllabus')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
     <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
     ${S.ui.projOpen?projTree(null,0,c)+(c.inbox?navItem('inbox','No subject',c.inbox):''):''}
@@ -1246,7 +1248,6 @@ function upscPreset(){snap();
   commit('UPSC subjects added',true);go('projects')}
 
 /* ================= syllabus + revision ================= */
-const REV_DAYS=[1,3,7,30];
 const SYL={
  'GS1|History':['Prehistoric age & Indus Valley','Vedic age','Mahajanapadas & Mauryas','Post-Mauryan & Gupta period','Early medieval & South India','Delhi Sultanate','Mughal Empire','Bhakti & Sufi movements','Marathas & regional powers','Advent of Europeans','Revolt of 1857','Social & religious reform movements','Early nationalism & Moderates','Extremists & Swadeshi','Gandhian era','Revolutionaries & INA','Partition & Independence','Post-independence consolidation','World history: Industrial & French Revolution','World history: World Wars & Cold War'],
  'GS1|Geography':['Universe & Solar System','Earth interior & geomorphology','Rocks & landforms','Atmosphere & climatology','Oceanography','Biogeography','Indian physiography','Drainage system','Indian climate & monsoon','Soils & natural vegetation','Indian agriculture','Minerals, energy & industries','Transport & trade','Population & urbanisation','World resources & regions'],
@@ -1271,10 +1272,21 @@ function addTopics(pid,text){const names=String(text).split(/\r?\n/).map(x=>x.re
   snap();names.forEach(n=>S.topics.push({id:uid(),project:pid,name:n.slice(0,160),read:null,revs:[],order:S.topics.length}));commit(names.length+' topic'+(names.length>1?'s':'')+' added',true);
   setTimeout(()=>{const i=document.querySelector(`[data-tpn-new="${pid}"]`);if(i)i.focus()},0)}
 function setTopicRead(id,on){const tp=topic(id);if(!tp)return;snap();
-  if(on){tp.read=T();tp.revs=REV_DAYS.map((d,i)=>{const t=addTask({title:`Revise: ${tp.name} (R${i+1})`,project:tp.project,due:addD(T(),d),priority:3,topic:tp.id,rev:i+1});return{n:i+1,due:t.due,task:t.id}});
-    commit(`Marked read · revisions on day ${REV_DAYS.join(', ')}`,true)}
-  else{const ids=new Set(tp.revs.map(r=>r.task));S.tasks=S.tasks.filter(t=>!ids.has(t.id)||t.done);tp.read=null;tp.revs=[];commit('Marked unread, pending revisions removed',true)}}
-function revState(r){const t=S.tasks.find(x=>x.id===r.task);if(!t)return'gone';if(t.done)return'done';return t.due&&t.due<T()?'late':'due'}
+  if(on){tp.read=T();tp.revs=tp.revs||[];commit('Marked read',true)}
+  else{const ids=new Set((tp.revs||[]).map(r=>r.task).filter(Boolean));S.tasks=S.tasks.filter(t=>!ids.has(t.id)||t.done);tp.read=null;tp.revs=[];commit('Marked unread',true)}}
+function revState(r){if(r.task){const t=S.tasks.find(x=>x.id===r.task);if(!t)return'gone';return t.done?'done':(t.due&&t.due<T()?'late':'due')}
+  return r.done?'done':(r.due&&r.due<T()?'late':'due')}
+const shortD=x=>{const d=pd(x);return d.getDate()+' '+MON[d.getMonth()]};
+function revModal(tid,n){const tp=topic(tid);if(!tp)return;const r=n?(tp.revs||[]).find(x=>x.n===n):null;
+  showModal(`<form id="rvf"><div class="mh"><b>${r?'Revision R'+r.n:'Add revision'} · ${esc(tp.name)}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <div class="fld"><label for="rvD">Revision date</label><input class="inp" type="date" id="rvD" value="${r?r.due:addD(T(),7)}"></div>
+    ${r?`<label class="chkl" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="rvX" ${r.done||revState(r)==='done'?'checked':''}> Revision completed</label>`:''}</div>
+    <div class="mf">${r?`<button type="button" class="btn danger" id="rvDel" style="margin-right:auto">Delete</button>`:''}<button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">Save</button></div></form>`);
+  $('rvf').onsubmit=e=>{e.preventDefault();const d=$('rvD').value;if(!d)return;snap();tp.revs=tp.revs||[];
+    if(r){r.due=d;if(r.task){const t=S.tasks.find(x=>x.id===r.task);if(t){t.due=d;t.done=$('rvX').checked}}else r.done=$('rvX').checked}
+    else tp.revs.push({n:(tp.revs.reduce((m,x)=>Math.max(m,x.n),0))+1,due:d,done:false});
+    tp.revs.sort((a,b)=>a.due.localeCompare(b.due));closeModal();commit('Revision saved',true)};
+  if(r)$('rvDel').onclick=()=>{snap();tp.revs=tp.revs.filter(x=>x!==r);closeModal();commit('Revision removed',true)}}
 function syllabusHTML(){
   const subs=S.projects.filter(p=>!p.archived&&!p.folder&&(!p.parent||!proj(p.parent)?.archived));
   const ts=S.topics.filter(t=>proj(t.project)&&!proj(t.project).archived);
@@ -1283,13 +1295,13 @@ function syllabusHTML(){
   const top=`<div class="nkcard" style="margin:10px 0 16px"><div class="syl-sum"><div><b>${pc(read,ts.length)}%</b><span>topics read (${read}/${ts.length})</span>${bar(pc(read,ts.length))}</div>
     <div><b>${pc(rvDone,rv.length)}%</b><span>revisions done (${rvDone}/${rv.length})</span>${bar(pc(rvDone,rv.length))}</div>
     <div><b style="color:${late?'var(--p1)':'inherit'}">${late}</b><span>revisions overdue</span></div></div>
-    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Tick a topic as read: revision tasks are created automatically after ${REV_DAYS.join(', ')} days and appear in Today's task and the calendar.</p></div>`;
+    <p class="muted" style="margin:10px 0 0;font-size:12.5px">Tick a topic as read, then add your own revision dates with the + button. Plan each day in <b>Daily plan</b>.</p></div>`;
   const preset=`<button class="pill" data-a="topicPreset">${ic('plus')} Load UPSC topics</button>`;
   const order=subs.slice().sort((a,b)=>projPath(a.id).localeCompare(projPath(b.id)));
   const cards=order.map(p=>{const L=S.topics.filter(t=>t.project===p.id).sort((a,b)=>a.order-b.order),dn=L.filter(t=>t.read).length;
     return`<div class="nkcard syl" style="margin-bottom:12px"><div class="nkh"><span class="mon" style="font-size:15px">📂 ${esc(projPath(p.id))}</span><span class="muted">${L.length?dn+'/'+L.length+' read':'no topics'}</span></div>${L.length?bar(pc(dn,L.length)):''}
     ${L.length?`<ul class="tl chaps">${L.map(t=>`<li class="chap tp ${t.read?'done':''}"><label><input type="checkbox" data-tpr="${t.id}" ${t.read?'checked':''} aria-label="Mark read"><input class="cin" data-tpn="${t.id}" value="${esc(t.name)}" maxlength="160" aria-label="Topic name"></label>
-      <span class="revs">${t.read?t.revs.map(r=>{const st=revState(r);return st==='gone'?'':`<button class="rv ${st}" data-a="tpRev" data-id="${r.task}" title="R${r.n} · ${esc(r.due)}">R${r.n}</button>`}).join(''):''}</span>
+      <span class="revs">${t.read?(t.revs||[]).map(r=>{const st=revState(r);return st==='gone'?'':`<button class="rv ${st}" data-a="tpRev" data-id="${t.id}" data-n="${r.n}" title="Edit revision">${st==='done'?'✓ ':''}${shortD(r.due)}</button>`}).join('')+`<button class="rv add" data-a="tpRevAdd" data-id="${t.id}" aria-label="Add revision date">+</button>`:''}</span>
       <button class="ibtn" data-a="tpDel" data-id="${t.id}" aria-label="Delete topic">${ic('x')}</button></li>`).join('')}</ul>`:''}
     <div class="chapadd" style="margin-top:8px"><input class="inp" data-tpn-new="${p.id}" placeholder="Add topic and press Enter (paste many lines to add all)" maxlength="4000" autocomplete="off"><button class="btn pri" data-a="tpAdd" data-id="${p.id}">Add</button></div></div>`}).join('');
   return`<div class="hdr2">Syllabus ${preset}</div>${top}${cards||empty('project','No subjects yet','Add your UPSC subjects first, or load the UPSC topics to create them.',`<button class="addrow" data-a="topicPreset"><span class="plus">${ic('plus')}</span>Load UPSC topics</button>`)}`}
@@ -1298,6 +1310,28 @@ document.addEventListener('paste',e=>{const t=e.target;if(!(t.dataset&&t.dataset
 document.addEventListener('change',e=>{const t=e.target;if(view!=='syllabus'||!t.dataset)return;
   if(t.dataset.tpr)setTopicRead(t.dataset.tpr,t.checked);
   else if(t.dataset.tpn){const tp=topic(t.dataset.tpn),v=t.value.trim();if(tp&&v&&v!==tp.name){tp.name=v;commit()}else if(tp)t.value=tp.name}});
+
+/* ================= daily plan ================= */
+const SLOTS=[['morning','🌅 Morning'],['afternoon','☀️ Afternoon'],['evening','🌙 Evening']];
+function planAddItem(slot,o){const date=S.ui.planDate||T();snap();S.plan.push(Object.assign({id:uid(),date,slot,text:'',rev:false,done:false,tp:null,rn:null,created:Date.now()},o));commit()}
+function planAdd(slot,text,kind){text=String(text||'').trim();if(!text)return;const tp=S.topics.find(t=>t.name.toLowerCase()===text.toLowerCase());
+  planAddItem(slot,{text:text.slice(0,200),rev:kind==='rev',tp:tp?tp.id:null});setTimeout(()=>{const i=document.querySelector(`[data-pl-new="${slot}"]`);if(i)i.focus()},0)}
+function planHTML(){const date=S.ui.planDate||T(),dd=pd(date),n=diffD(date,T());
+  const items=S.plan.filter(x=>x.date===date),dn=items.filter(x=>x.done).length;
+  const dueRevs=[];S.topics.forEach(t=>(t.revs||[]).forEach(r=>{if(!r.task&&!r.done&&r.due&&(r.due===date||(n===0&&r.due<date))&&!S.plan.some(x=>x.tp===t.id&&x.rn===r.n&&x.date===date))dueRevs.push({t,r})}));
+  const head=`<div class="nkcard" style="margin:10px 0 14px"><div class="nkh"><span class="mon">${DAYS[dd.getDay()]}, ${dd.getDate()} ${MONF[dd.getMonth()]}${n===0?' · Today':n===1?' · Tomorrow':n===-1?' · Yesterday':''}</span>
+    <button class="ibtn" data-a="planNav" data-n="-1" aria-label="Previous day">${ic('chevL')}</button><button class="pill" data-a="planNav" data-n="0">Today</button><button class="ibtn" data-a="planNav" data-n="1" aria-label="Next day">${ic('chev')}</button></div>
+    ${items.length?`<div class="pbar"><i style="width:${Math.round(dn*100/items.length)}%"></i></div><span class="muted" style="font-size:12.5px">${dn}/${items.length} done</span>`:'<span class="muted" style="font-size:12.5px">Nothing planned yet. Add topics to Morning, Afternoon or Evening.</span>'}</div>`;
+  const due=dueRevs.length?`<div class="nkcard" style="margin-bottom:14px"><div class="nkh"><span class="mon" style="font-size:15px">🔁 Revision due</span></div>${dueRevs.map(({t,r})=>`<div class="chap"><span style="flex:1;min-width:0">${esc(t.name)} <span class="muted">· ${shortD(r.due)}</span></span>${SLOTS.map(([k,l])=>`<button class="rv add" data-a="planRev" data-slot="${k}" data-name="${esc(t.name)}" data-tp="${t.id}" data-rn="${r.n}" title="Add to ${k}">${l.split(' ')[0]}</button>`).join('')}</div>`).join('')}</div>`:'';
+  const names=`<datalist id="topicNames">${S.topics.filter(t=>proj(t.project)).map(t=>`<option value="${esc(t.name)}">`).join('')}</datalist>`;
+  const cards=SLOTS.map(([k,l])=>{const L=items.filter(x=>x.slot===k).sort((a,b)=>a.created-b.created);
+    return`<div class="nkcard" style="margin-bottom:12px"><div class="nkh"><span class="mon" style="font-size:15px">${l}</span><span class="muted">${L.length?L.filter(x=>x.done).length+'/'+L.length:''}</span></div>
+    ${L.length?`<ul class="tl chaps">${L.map(x=>`<li class="chap ${x.done?'done':''}"><label><input type="checkbox" data-pl="${x.id}" ${x.done?'checked':''}><span class="pln">${x.rev?'🔁 ':''}${esc(x.text)}</span></label><button class="ibtn" data-a="planDel" data-id="${x.id}" aria-label="Remove">${ic('x')}</button></li>`).join('')}</ul>`:''}
+    <div class="chapadd"><input class="inp" list="topicNames" data-pl-new="${k}" placeholder="Topic or task, then Enter" maxlength="200" autocomplete="off"><select class="inp" data-pl-kind="${k}" style="flex:none;width:auto"><option value="study">Study</option><option value="rev">Revision</option></select><button class="btn pri" data-a="planAdd" data-id="${k}">Add</button></div></div>`}).join('');
+  return`${head}${due}${names}${cards}`}
+document.addEventListener('keydown',e=>{const t=e.target;if(t.dataset&&t.dataset.plNew&&e.key==='Enter'){e.preventDefault();planAdd(t.dataset.plNew,t.value,document.querySelector(`[data-pl-kind="${t.dataset.plNew}"]`)?.value)}});
+document.addEventListener('change',e=>{const t=e.target;if(view!=='plan'||!t.dataset||!t.dataset.pl)return;const x=S.plan.find(y=>y.id===t.dataset.pl);if(!x)return;x.done=t.checked;
+  if(x.tp&&x.rn){const tp=topic(x.tp),r=tp&&(tp.revs||[]).find(z=>z.n===x.rn);if(r&&!r.task)r.done=t.checked}commit()});
 
 /* ================= books ================= */
 function booksHTML(){
@@ -1482,6 +1516,7 @@ function render(){
   else if(v==='exams')body=examsHTML();
   else if(v==='books')body=booksHTML();
   else if(v==='syllabus')body=syllabusHTML();
+  else if(v==='plan')body=planHTML();
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
@@ -1802,7 +1837,12 @@ document.addEventListener('click',e=>{
   case'topicPreset':stop();topicPreset();break;
   case'tpAdd':{stop();const i=document.querySelector(`[data-tpn-new="${id}"]`);if(i)addTopics(id,i.value);break}
   case'tpDel':{stop();snap();S.topics=S.topics.filter(x=>x.id!==id);commit('Topic removed',true);break}
-  case'tpRev':stop();toggleTask(id);break;
+  case'tpRev':stop();revModal(id,+b.dataset.n);break;
+  case'tpRevAdd':stop();revModal(id);break;
+  case'planNav':{stop();const n=+b.dataset.n;S.ui.planDate=n===0?T():addD(S.ui.planDate||T(),n);save();render();break}
+  case'planAdd':{stop();const i=document.querySelector(`[data-pl-new="${id}"]`);if(i)planAdd(id,i.value,document.querySelector(`[data-pl-kind="${id}"]`)?.value);break}
+  case'planDel':{stop();snap();S.plan=S.plan.filter(x=>x.id!==id);commit();break}
+  case'planRev':{stop();planAddItem(b.dataset.slot,{text:b.dataset.name,rev:true,tp:b.dataset.tp,rn:+b.dataset.rn});break}
   case'chapAdd':{stop();const i=$('chN');if(i){addChapters(id,i.value)}break}
   case'chapDel':{stop();const bk=book(id);if(bk){snap();bk.chapters=(bk.chapters||[]).filter(c=>c.id!==b.dataset.c);commit('Chapter removed',true)}break}
   case'editRem':stop();editRem(id,b.dataset.d);break;
