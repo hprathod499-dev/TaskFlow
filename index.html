@@ -343,6 +343,13 @@ body{margin:0}
 .avatar svg{width:15px;height:15px}
 .avatar.big{width:64px;height:64px;font-size:26px;margin:0 auto 10px}
 .avatar.big svg{width:30px;height:30px}
+.dd{margin-top:16px;border:1px solid var(--line);border-radius:8px}
+.dd>summary{list-style:none;cursor:pointer;padding:11px 12px;font-weight:600;font-size:13px;display:flex;align-items:center;justify-content:space-between;border-radius:8px}
+.dd>summary:hover{background:var(--hover)}
+.dd>summary::-webkit-details-marker{display:none}
+.dd>summary::after{content:"";width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);margin:-3px 4px 0 0;transition:transform .15s}
+.dd[open]>summary::after{transform:rotate(-135deg);margin-top:3px}
+.dd .ddb{padding:2px 12px 14px}
 .who.unset{color:var(--muted);font-weight:500}
 .pcard h2{font-family:var(--f-display);font-size:22px;margin:6px 0 2px;text-wrap:balance}
 .quote{color:var(--muted);font-style:italic}
@@ -697,11 +704,11 @@ function driveErr(e){const m=(e&&e.message)||'';
   return'Could not finish: '+m}
 function driveBlock(){const u=cloud.user;
   const last=S.ui.lastBackup?new Date(S.ui.lastBackup).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):null;
-  return `<div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Google Drive backup</div>`+(u
+  return `<details class="dd"><summary>Google Drive backup</summary><div class="ddb">`+(u
    ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Saves a copy of all your tasks in a “TaskFlow Backups” folder in your Google Drive and keeps the latest 10. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gdBack">Back up now</button><button class="btn sec" id="gdRest">Restore from Drive</button></div>
    <div class="muted" id="gdMsg" style="font-size:12px;margin-top:6px" role="status"></div><div id="gdList"></div>`
-   :`<p class="muted" style="margin:0;font-size:13px">Sign in with Google to use Drive backup.</p>`)}
+   :`<p class="muted" style="margin:0;font-size:13px">Sign in with Google to use Drive backup.</p>`)+`</div></details>`}
 function wireDrive(){
   const msg=t=>{const e=$('gdMsg');if(e)e.textContent=t};
   if(!$('gdBack'))return;
@@ -1225,11 +1232,8 @@ function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class
   <div class="switch"><label for="stW">Week starts on</label><select id="stW"><option value="1" ${S.settings.weekStart===1?'selected':''}>Monday</option><option value="0" ${S.settings.weekStart===0?'selected':''}>Sunday</option></select></div>
   ${accountBlock()}
   ${driveBlock()}
-  <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Manual backup (copy and paste)</div>
-  <p class="muted" style="margin:0 0 8px;font-size:13px">Copy a backup as a safety copy of everything, or restore one.</p>
-  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" id="stCopy">${'Copy backup'}</button><button class="btn sec" id="stImp">Restore from backup</button><button class="btn danger" id="stReset">Reset all data</button></div>
-  <textarea class="inp" id="stBox" hidden style="margin-top:10px;min-height:110px;font-size:12px" placeholder="Paste a backup here"></textarea>
-  <div class="muted" id="stMsg" style="font-size:12px;margin-top:6px"></div>
+  <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Data</div>
+  <button class="btn danger" id="stReset" style="padding-left:0">Reset all data</button>
   <div class="l" style="font-weight:600;font-size:13px;margin:16px 0 4px">Shortcuts</div>
   <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / Inbox · <b>Esc</b> close</p></div>
   <div class="mf"><button class="btn pri" data-a="closeModal">Done</button></div>`);
@@ -1237,9 +1241,6 @@ function settingsModal(){showModal(`<div class="mh"><b>Settings</b><button class
   wireDrive();
   $('stT').onchange=e=>{S.settings.theme=e.target.value;applyTheme();commit()};
   $('stW').onchange=e=>{S.settings.weekStart=+e.target.value;S.ui.upStart=null;commit()};
-  $('stCopy').onclick=async()=>{const txt=JSON.stringify(S);try{await navigator.clipboard.writeText(txt);$('stMsg').textContent='Backup copied. Paste it into a note or email to keep it.'}catch(e){$('stBox').hidden=false;$('stBox').value=txt;$('stBox').select();$('stMsg').textContent='Copy the selected text above.'}};
-  $('stImp').onclick=()=>{const b=$('stBox');if(b.hidden||!b.value.trim().startsWith('{')){b.hidden=false;b.value='';b.focus();$('stMsg').textContent='Paste your backup, then press Restore again.';return}
-    try{const n=JSON.parse(b.value);if(n.v!==2||!Array.isArray(n.tasks))throw 0;snap();S=n;applyTheme();closeModal();commit('Backup restored',true)}catch(e){$('stMsg').textContent='That text is not a TaskFlow backup. Copy the whole backup and try again.'}};
   $('stReset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
     snap();S=sampleData();S.tasks=[];S.log=[];S.ui.upStart=null;closeModal();commit('All data reset',true)}}
 
