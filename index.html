@@ -1818,7 +1818,7 @@ document.addEventListener('drop',e=>{const c=e.target.closest('.col[data-drop]')
 document.addEventListener('scroll',e=>{if(e.target.id==='content')$('crumb').classList.toggle('show',e.target.scrollTop>50)},true);
 
 /* ================= boot ================= */
-view=viewOf(location.hash);if(!validView(view))view='today';
+view='today';if(location.hash&&location.hash!=='#today')history.replaceState(null,'',location.pathname+location.search+'#today');
 wireWeekly();
 setInterval(checkReminders,15000);setTimeout(checkReminders,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});
 render();
