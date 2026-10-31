@@ -484,6 +484,9 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const PRI={1:'var(--p1)',2:'var(--p2)',3:'var(--p3)',4:'var(--p4)'};
 
 function sampleData(){
+  return{v:2,user:{name:'Me'},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],
+    display:{},recent:['today'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}}}
+function demoData(){
   const P=(id,name,color,parent=null,fav=false)=>({id,name,color,parent,fav,archived:false,order:0});
   const projects=[P('upsc','UPSC','#ff9933'),P('society','Society','#299438','upsc'),P('geography','Geography','#4073ff','upsc',true),
     P('ir','International Relations','#db4035','upsc'),P('economy','Economy','#b8256f','upsc',true),P('isec','Internal Security','#158fad','upsc',true),
@@ -559,7 +562,7 @@ function attach(u){
     const v=snap.val();
     if(cloud.first){
       cloud.first=false;
-      if(v==null||!v.json){pushNow();render();return}
+      if(v==null||!v.json){if(S.user.name==='Me'&&u.displayName){S.user.name=u.displayName.split(' ')[0]}pushNow();render();return}
       let remote;try{remote=JSON.parse(v.json)}catch(e){setStatus('error');return}
       if(!remote||remote.v!==2||!Array.isArray(remote.tasks)){setStatus('error');return}
       if(S.dirty){S=mergeData(S,remote);S.dirty=true;S.updatedAt=Date.now();lastSig=sig();saveLocal();pushNow()}
