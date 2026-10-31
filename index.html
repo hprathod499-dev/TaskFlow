@@ -1082,7 +1082,7 @@ function renderSide(){const c=counts();
     <button class="ibtn" data-a="toggleSide" aria-label="Close sidebar">${ic('side')}</button></div>
   <div class="side-scroll">
     <button class="add-task-side" data-a="quickAdd"><span class="ico">📝</span>Add task</button>
-    ${navItem('search','Search')}${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
+    ${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
     ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}
     <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
