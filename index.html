@@ -4,7 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#1E1712">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="TaskFlow">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="application-name" content="TaskFlow">
 <meta name="mobile-web-app-capable" content="yes">
 <title>TaskFlow</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&family=Inter:wght@400;500;600&family=Noto+Sans+Gujarati:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -346,9 +352,11 @@ textarea.inp{resize:vertical;min-height:70px}
 
 @media (max-width:860px){
   .app,.app.collapsed{grid-template-columns:1fr}
-  aside{position:fixed;inset:0 auto 0 0;width:min(300px,86vw);z-index:30;transform:translateX(-100%);transition:transform .2s;padding-top:env(safe-area-inset-top,0px);visibility:visible!important}
+  aside{position:fixed;inset:0 auto 0 0;width:min(270px,86vw);z-index:30;transform:translateX(-100%);transition:transform .25s cubic-bezier(.16,1,.3,1);padding-bottom:env(safe-area-inset-bottom,0px);padding-top:env(safe-area-inset-top,0px);visibility:visible!important}
   .app.drawer aside{transform:none}
-  .app.drawer .drawer-scrim{display:block;position:fixed;inset:0;background:#0007;z-index:25}
+  .app.drawer .drawer-scrim{display:block;position:fixed;inset:0;background:#0007;z-index:25;animation:scrimIn .2s ease-out}
+  @keyframes scrimIn{from{opacity:0}to{opacity:1}}
+  aside.dragging{transition:none!important}
   .wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
   .det{grid-template-columns:1fr}
   .det-side{border-left:0;border-top:1px solid var(--line);border-radius:0 0 12px 12px}
@@ -1104,6 +1112,7 @@ function renderSide(){const c=counts();
     ${S.ui.projOpen?projTree(null,0,c)+(c.inbox?navItem('inbox','No subject',c.inbox):''):''}
     <div class="side-foot">
       <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">✏️</span><span class="lab">Manage subjects</span></div>
+      ${window.tfInstallable&&window.tfInstallable()?`<div class="nav-i" role="button" tabindex="0" data-a="install"><span class="ico">📲</span><span class="lab">Install app</span></div>`:''}
       <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">⚙️</span><span class="lab">Settings</span></div>
     </div>
   </div>`}
@@ -1728,6 +1737,26 @@ $('toastUndo').onclick=()=>{if(!undoSnap)return;S=JSON.parse(undoSnap);undoSnap=
   document.addEventListener('contextmenu',e=>{if(e.target.closest('input,textarea,select'))return;if(editAt(e.target))e.preventDefault()},true);
 })();
 
+/* ================= swipe sidebar + install app ================= */
+(()=>{const app=()=>$('app'),side=()=>document.querySelector('aside');let st=null;
+  const W=()=>side().getBoundingClientRect().width||270;
+  document.addEventListener('touchstart',e=>{if(innerWidth>860||e.touches.length!==1||$('modalRoot').innerHTML)return;const t=e.touches[0],open=app().classList.contains('drawer');
+    if(!open&&t.clientX>28)return;if(!open&&e.target.closest('input,textarea,select,.calwrap'))return;st={x:t.clientX,y:t.clientY,open,drag:false,dx:0}},{passive:true});
+  document.addEventListener('touchmove',e=>{if(!st)return;const t=e.touches[0],dx=t.clientX-st.x,dy=t.clientY-st.y;
+    if(!st.drag){if(Math.abs(dy)>Math.abs(dx)&&Math.abs(dy)>8){st=null;return}if(Math.abs(dx)<10)return;if(st.open?dx>0:dx<0){st=null;return}st.drag=true;side().classList.add('dragging')}
+    const w=W();let x=st.open?Math.min(0,dx):Math.min(0,-w+Math.max(0,dx));x=Math.max(-w,x);side().style.transform=`translateX(${x}px)`;st.dx=dx},{passive:true});
+  const end=()=>{if(!st)return;const s=st;st=null;if(!s.drag)return;const a=side();a.classList.remove('dragging');a.style.transform='';
+    const w=W(),opened=s.open?s.dx>-w*.3:s.dx>w*.3;app().classList.toggle('drawer',opened)};
+  document.addEventListener('touchend',end);document.addEventListener('touchcancel',end);
+  let dip=null;window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();dip=e;render()});
+  window.addEventListener('appinstalled',()=>{dip=null;render()});
+  window.tfInstallable=()=>!(matchMedia('(display-mode: standalone)').matches||navigator.standalone);
+  window.tfInstall=async()=>{if(dip){dip.prompt();try{await dip.userChoice}catch(_){}dip=null;render();return}
+    const ios=/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+    showModal(`<div class="mh"><b>Install TaskFlow</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><p style="margin:0 0 8px">${ios?'On iPhone or iPad (Safari):':'On Chrome or Edge:'}</p><ol style="margin:0;padding-left:20px;line-height:1.7">${ios?'<li>Tap the <b>Share</b> button (square with an up arrow).</li><li>Scroll and tap <b>Add to Home Screen</b>.</li><li>Tap <b>Add</b>.</li>':'<li>Open the browser menu <b>⋮</b>.</li><li>Tap <b>Install app</b> (or <b>Add to Home screen</b>).</li><li>Confirm <b>Install</b>.</li>'}</ol></div><div class="mf"><button class="btn pri" data-a="closeModal">Got it</button></div>`)};
+  if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+})();
+
 /* ================= events ================= */
 document.addEventListener('click',e=>{
   const b=e.target.closest('[data-a]');if(!b)return;
@@ -1739,6 +1768,7 @@ document.addEventListener('click',e=>{
   case'col':stop();S.ui.col[id]=!S.ui.col[id];save();render();break;
   case'secTog':S.ui[b.dataset.k]=!S.ui[b.dataset.k];save();render();break;
   case'toggleSide':if(innerWidth<=860)$('app').classList.toggle('drawer');else $('app').classList.toggle('collapsed');break;
+  case'install':stop();window.tfInstall&&window.tfInstall();break;
   case'closeDrawer':$('app').classList.remove('drawer');break;
   case'quickAdd':stop();let add={};try{add=JSON.parse(b.dataset.add||'{}')}catch(_){}quickAdd(add);break;
   case'toggle':stop();toggleTask(id);break;
