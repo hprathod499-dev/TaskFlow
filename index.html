@@ -503,6 +503,10 @@ button:active{transform:scale(.97)}
 .bdg{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:#25D366;color:#fff;font:700 11px/1 var(--f-body);margin-left:4px;flex:none}.bdg.red{background:#E53935}
 .nav-i .n{display:flex;align-items:center}.nav-i.on .bdg{color:#fff}.rdt{padding:3px 9px;font-size:12px;white-space:nowrap}
 @media(max-width:560px){.rdt{padding:3px 6px;font-size:11px}.chtop{flex-wrap:wrap}}
+.revp{border-top:1px solid var(--line);padding:6px 0}.revh{display:flex;align-items:center;gap:6px;cursor:pointer;padding:4px 0}.revh svg{width:14px;height:14px;color:var(--faint)}
+.revs{font-size:11.5px;padding:2px 8px;border-radius:10px;background:var(--raise);color:var(--muted);white-space:nowrap}.revs.today{background:#25D366;color:#fff}.revs.late{background:#E53935;color:#fff}.revs.done{background:var(--accent-soft);color:var(--accent)}
+.revl{margin:4px 0 0 26px;padding:0;list-style:none}.revl .chap{padding:6px 0}
+@media(max-width:560px){.revh{flex-wrap:wrap}.revl{margin-left:6px}}
 </style>
 </head>
 <body>
@@ -697,7 +701,7 @@ function demoData(){
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||S.v!==2)S=sampleData();
-function ensure(x){['books','reminders','exams','chapters','pending'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
+function ensure(x){['books','reminders','exams','chapters','pending'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});if(!x.revDone||typeof x.revDone!=='object'||Array.isArray(x.revDone))x.revDone={};return x}
 ensure(S);
 /* ================= cloud sync (Firebase Realtime Database) ================= */
 const FB_CFG={
@@ -735,6 +739,7 @@ function mergeData(local,remote){
   ['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
+  out.revDone=Object.assign({},remote.revDone||{},local.revDone||{});
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
 function adopt(remote){ensure(remote);stashPurged(remote);remote.ui=S.ui;remote.display=S.display;remote.recent=S.recent;remote.settings=S.settings;remote.dirty=false;
   if(S.settings.syncTheme!==false&&remote.user&&remote.user.theme){S.settings.theme=remote.user.theme.mode||S.settings.theme;S.settings.color=remote.user.theme.color||'classic'}
@@ -1035,17 +1040,17 @@ const hashOf=v=>v.replace(':','-');
 const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plfb])-(.+)$/);return m?m[1]+':'+m[2]:h};
 function go(v){if(location.hash.slice(1)!==hashOf(v))location.hash=hashOf(v);else{view=v;render()}$('app').classList.remove('drawer')}
 window.addEventListener('hashchange',()=>{view=viewOf(location.hash);if(!validView(view))view='today';track(view);render();$('content').scrollTop=0});
-function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','pending'].includes(v)}
+function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','pending','revision'].includes(v)}
 function track(v){if(v==='search')return;S.recent=[v,...S.recent.filter(x=>x!==v)].slice(0,8);save()}
 function viewName(v){const[k,id]=v.split(':');
   if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
-  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',pending:'Pending'}[v]}
+  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',pending:'Pending',revision:'Revision'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
   if(k==='b')return`<span class="emo">📖</span>`;
   if(k==='p')return isFolder(id)?`<span class="emo">📁</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',pending:'⏳'}[v]||'📄'}</span>`}
+  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',pending:'⏳',revision:'🔁'}[v]||'📄'}</span>`}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -1125,7 +1130,7 @@ function renderSide(){const c=counts();
   <div class="side-scroll">
     <button class="add-task-side" data-a="quickAdd"><span class="ico">📝</span>Add task</button>
     ${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
-    ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}${navItem('pending','Pending',bdg(c.pend(),'red','pending'))}
+    ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}${navItem('pending','Pending',bdg(c.pend(),'red','pending'))}${navItem('revision','Revision',bdg(revDueCount(),'red','revisions due'))}
     <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
     <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
@@ -1461,6 +1466,49 @@ function pendingHTML(){const late=S.tasks.filter(t=>open(t)&&t.due&&t.due<T()).s
       <span style="display:flex;gap:6px;align-items:center;flex:none"><button class="btn pri" data-a="${kind==='del'?'penRestart':'lateToday'}" data-id="${t.id}">Restart today</button>${kind==='del'?`<button class="ibtn" data-a="penDel" data-id="${t.id}" aria-label="Remove forever">${ic('x')}</button>`:''}</span></li>`};
   return(late.length?`<div class="grp-h">Not finished on time <span class="bdg red">${late.length}</span></div><ul class="tl">${late.map(t=>row(t,'late')).join('')}</ul>`:'')
     +(del.length?`<div class="grp-h" style="margin-top:12px">Deleted before finishing <span class="bdg red">${del.length}</span></div><ul class="tl">${del.map(t=>row(t,'del')).join('')}</ul>`:'')}
+/* ================= revision: built from what was read (finished tasks and pages read) ================= */
+const monOf=s=>{const d=pd(s),k=(d.getDay()+6)%7;d.setDate(d.getDate()-k);return iso(d)};   /* week = Monday to Sunday */
+const lastDayOf=ym=>{const[y,m]=ym.split('-').map(Number);return iso(new Date(y,m,0))};
+const lastSunOf=ym=>{const d=pd(lastDayOf(ym));d.setDate(d.getDate()-d.getDay());return iso(d)};
+const shortRange=(a,b)=>{const x=pd(a),y=pd(b);return`${x.getDate()} ${MON[x.getMonth()]} – ${y.getDate()} ${MON[y.getMonth()]}`};
+function readEvents(){const ev=[],byId=new Map(S.tasks.map(t=>[t.id,t]));
+  S.tasks.forEach(t=>{if(t.sample)return;(t.pageLog||[]).forEach(l=>{if(l&&l.date)ev.push({tid:t.id,date:l.date,pages:+l.n||0,kind:'pages'})})});
+  S.log.forEach(e=>{if(!e||!e.at)return;const t=byId.get(e.taskId);if(t&&t.sample)return;ev.push({tid:e.taskId||('log:'+e.id),date:iso(new Date(e.at)),pages:0,kind:'done',title:e.title,project:e.project})});
+  return ev}
+function revItems(evs){const m=new Map(),byId=new Map(S.tasks.map(t=>[t.id,t]));
+  evs.forEach(e=>{const t=byId.get(e.tid);let it=m.get(e.tid);
+    if(!it){it={key:e.tid,title:t?t.title:(e.title||'Task'),project:t?t.project:e.project,chapter:t?t.chapter:null,pages:0,done:false,dates:new Set()};m.set(e.tid,it)}
+    it.pages+=e.pages;if(e.kind==='done'){it.done=true;if(t&&t.pages>0&&!(t.pageLog||[]).length)it.pages=Math.max(it.pages,t.pages)}it.dates.add(e.date)});
+  return[...m.values()].map(it=>Object.assign(it,{dates:[...it.dates].sort()})).sort((a,b)=>a.dates[0].localeCompare(b.dates[0]))}
+function revPeriods(){const ev=readEvents(),wk=new Map(),mo=new Map(),mode=S.settings.monthlyRev||'lastSun';
+  ev.forEach(e=>{const w=monOf(e.date);(wk.get(w)||wk.set(w,[]).get(w)).push(e);const ym=e.date.slice(0,7);(mo.get(ym)||mo.set(ym,[]).get(ym)).push(e)});
+  const out={week:[],second:[],month:[]};
+  [...wk.entries()].forEach(([w,es])=>{const sun=addD(w,6),items=revItems(es);
+    out.week.push({kind:'week',key:'w:'+w,label:'Week '+shortRange(w,sun),due:sun,items});
+    out.second.push({kind:'second',key:'s:'+w,label:'Reading of '+shortRange(w,sun),due:addD(sun,14),items})});
+  [...mo.entries()].forEach(([ym,es])=>{const[y,m]=ym.split('-').map(Number);out.month.push({kind:'month',key:'m:'+ym,label:MONF[m-1]+' '+y,due:mode==='lastDay'?lastDayOf(ym):lastSunOf(ym),items:revItems(es)})});
+  Object.values(out).forEach(L=>L.sort((a,b)=>b.due.localeCompare(a.due)));return out}
+const rdKey=(per,it)=>per.key+'|'+it.key;
+const perDone=per=>per.items.length>0&&per.items.every(it=>S.revDone[rdKey(per,it)]);
+function revDueCount(){try{const P=revPeriods();return[...P.week,...P.second,...P.month].filter(x=>x.due<=T()&&!perDone(x)).length}catch(_){return 0}}
+function perStatus(per){if(perDone(per))return['done','✓ Revised'];const n=diffD(per.due,T());if(n<0)return['late','Overdue · was '+fmtShort(per.due)];if(n===0)return['today','Revise today'];return['later','Revise on '+DAYS[pd(per.due).getDay()].slice(0,3)+', '+fmtShort(per.due)]}
+function revisionHTML(){const P=revPeriods(),open=S.ui.revOpen||{},mode=S.settings.monthlyRev||'lastSun';
+  const folder=(k,icon,name,sub,L)=>{const due=L.filter(x=>x.due<=T()&&!perDone(x)).length,isOpen=open[k]!==false;
+    return`<div class="nkcard" style="margin-bottom:14px"><div class="nkh" style="cursor:pointer" data-a="revFold" data-k="${k}"><span class="mon" style="font-size:16px">${icon} ${name}</span>${bdg(due,'red','due')}<span class="muted" style="font-size:12px">${L.length} folder${L.length===1?'':'s'}</span>${ic(isOpen?'chevD':'chev')}</div>
+      <p class="muted" style="margin:-6px 0 8px;font-size:12.5px">${sub}</p>
+      ${isOpen?(L.length?L.map(per=>{const st=perStatus(per),po=open[per.key],dn=per.items.filter(it=>S.revDone[rdKey(per,it)]).length;
+        return`<div class="revp ${st[0]}"><div class="revh" data-a="revPer" data-k="${per.key}">${ic(po?'chevD':'chev')}<span class="emo">📁</span><b>${esc(per.label)}</b><span class="revs ${st[0]}">${st[1]}</span><span class="muted" style="font-size:12px;margin-left:auto">${dn}/${per.items.length}</span></div>
+          ${po?`<ul class="tl revl">${per.items.map(it=>{const p=proj(it.project),c=it.chapter&&chap(it.chapter),k2=rdKey(per,it);
+            return`<li class="chap ${S.revDone[k2]?'done':''}"><label style="align-items:flex-start"><input type="checkbox" data-rv="${esc(k2)}" ${S.revDone[k2]?'checked':''} style="margin-top:3px"><span style="flex:1;min-width:0"><span class="pln" style="padding:0">${esc(it.title)}</span><span class="tm" style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--muted)">${c?`<span>${ic('book')}${esc(c.name)}</span>`:''}${p?`<span>${esc(p.name)} <span style="color:${p.color}">#</span></span>`:''}${it.pages?`<span>${it.pages} pages</span>`:''}<span>Read ${it.dates.map(fmtShort).join(', ')}</span>${it.done?'':'<span>(not finished)</span>'}</span></span></label></li>`}).join('')}</ul>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px 26px"><button class="pill" data-a="revAll" data-k="${per.key}">✓ Mark all revised</button><button class="pill" data-a="revToday" data-k="${per.key}">📝 Add to Today's task</button></div>`:''}</div>`}).join(''):'<p class="muted" style="margin:0;font-size:13px">Nothing read yet. Finish tasks or log pages and they will show here.</p>'):''}</div>`};
+  return`<p class="muted" style="margin:6px 0 14px;font-size:13px">Made automatically from the tasks you finished and the pages you read. Open a folder to see what to revise; tick each item when done.</p>
+    ${folder('week','🗓️','Weekly revision','Every Sunday: revise what you read that week (Monday to Sunday).',P.week)}
+    ${folder('second','🔂','Second revision (after 15 days)','Two weeks after the weekly revision, revise that week again.',P.second)}
+    ${folder('month','📆','Monthly revision',`Everything read in the month. Revise on <select class="inp" id="revMode" style="display:inline-block;width:auto;padding:2px 6px;font-size:12.5px"><option value="lastSun" ${mode==='lastSun'?'selected':''}>the last Sunday of the month</option><option value="lastDay" ${mode==='lastDay'?'selected':''}>the last day of the month</option></select>`,P.month)}`}
+function findPer(k){const P=revPeriods();return[...P.week,...P.second,...P.month].find(x=>x.key===k)}
+document.addEventListener('change',e=>{const t=e.target;if(view!=='revision')return;
+  if(t.id==='revMode'){S.settings.monthlyRev=t.value;saveLocal();render();return}
+  if(t.dataset&&t.dataset.rv){snap();if(t.checked)S.revDone[t.dataset.rv]=true;else delete S.revDone[t.dataset.rv];commit()}});
 /* ================= books ================= */
 function booksHTML(){
   const rows=S.books.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>{const ts=S.tasks.filter(t=>t.book===b.id),dn=ts.filter(t=>t.done).length,sj=b.subject&&proj(b.subject)?proj(b.subject).name:'';
@@ -1653,6 +1701,7 @@ function render(){
   else if(v==='exams')body=examsHTML();
   else if(v==='books')body=booksHTML();
   else if(v==='pending')body=pendingHTML();
+  else if(v==='revision')body=revisionHTML();
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
@@ -2019,6 +2068,11 @@ document.addEventListener('click',e=>{
     numPop(b,'Pages to read today',left||'',n=>{snap();const t=addTask({title:'Read '+c.name.replace(/^\d+\.\s*/,''),project:c.project,due:T(),chapter:c.id,pages:n||0,pagesRead:0,pageLog:[]});commit(`Added to Today's task${n?` · ${n} pages`:''}`,true)});break}
   case'recoverOpen':stop();recoverModal(id);break;
   case'recoverGo':stop();recoverGo(id,b.dataset.k);break;
+  case'revFold':{stop();S.ui.revOpen=S.ui.revOpen||{};const k=b.dataset.k;S.ui.revOpen[k]=S.ui.revOpen[k]===false;saveLocal();render();break}
+  case'revPer':{stop();S.ui.revOpen=S.ui.revOpen||{};const k=b.dataset.k;S.ui.revOpen[k]=!S.ui.revOpen[k];saveLocal();render();break}
+  case'revAll':{stop();const per=findPer(b.dataset.k);if(!per)break;snap();const all=perDone(per);per.items.forEach(it=>{if(all)delete S.revDone[rdKey(per,it)];else S.revDone[rdKey(per,it)]=true});commit(all?'Marked not revised':'All revised',true);break}
+  case'revToday':{stop();const per=findPer(b.dataset.k);if(!per)break;snap();const nm={week:'Weekly revision',second:'Second revision',month:'Monthly revision'}[per.kind];
+    addTask({title:`${nm}: ${per.label}`,due:T(),project:'inbox',subs:per.items.map(it=>({id:uid(),title:it.title+(it.chapter&&chap(it.chapter)?' — '+chap(it.chapter).name:''),done:!!S.revDone[rdKey(per,it)]}))});commit("Added to Today's task",true);break}
   case'chAdd':stop();addChapter(id);break;
   case'chFoldAdd':stop();addChFolder(id);break;
   case'chFoldTog':{stop();S.ui.chCol=S.ui.chCol||{};S.ui.chCol[b.dataset.k]=!S.ui.chCol[b.dataset.k];save();render();break}
