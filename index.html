@@ -1369,9 +1369,30 @@ function aiToRows(txt){let j;const t=String(txt).replace(/^```(json)?|```$/g,'')
   for(let i=1;i<ch.length;i++)if(ch[i].start!=null&&ch[i-1].start!=null&&ch[i].start<ch[i-1].start)ch[i].miss=true;
   ch.forEach(c=>{if(c.start==null)c.miss=true});
   return{rows:ch,end:Number.isFinite(+j.end_page)&&j.end_page!==null?Math.floor(+j.end_page):null}}
+/* Image clean-up before reading: grey, straighten (deskew), stretch contrast, enlarge. */
+function prepCanvas(src){const W=src.width,H=src.height,k=Math.max(1,Math.round(Math.max(W,H)/900));
+  const sw=Math.round(W/k),sh=Math.round(H/k),sm=document.createElement('canvas');sm.width=sw;sm.height=sh;const sx=sm.getContext('2d',{willReadFrequently:true});sx.drawImage(src,0,0,sw,sh);
+  const id=sx.getImageData(0,0,sw,sh).data,bin=new Uint8Array(sw*sh);for(let i=0,j=0;i<id.length;i+=4,j++)bin[j]=(id[i]*.3+id[i+1]*.59+id[i+2]*.11)<140?1:0;
+  const pts=[];for(let y=0;y<sh;y+=1)for(let x=0;x<sw;x+=1)if(bin[y*sw+x])pts.push(x-sw/2,y-sh/2);
+  let best=0,bv=-1;for(let a=-6;a<=6.001;a+=.25){const r=a*Math.PI/180,c=Math.cos(r),s2=Math.sin(r),rows=new Float32Array(sh*2);
+    for(let i=0;i<pts.length;i+=2){const y=Math.round(pts[i]*s2+pts[i+1]*c+sh);if(y>=0&&y<rows.length)rows[y]++}
+    let v=0;for(let i=1;i<rows.length;i++){const d=rows[i]-rows[i-1];v+=d*d}if(v>bv){bv=v;best=a}}
+  const up=Math.min(1.5,4200/Math.max(W,H)),rad=-best*Math.PI/180,cw=Math.abs(W*Math.cos(rad))+Math.abs(H*Math.sin(rad)),ch=Math.abs(W*Math.sin(rad))+Math.abs(H*Math.cos(rad));
+  const out=document.createElement('canvas');out.width=Math.round(cw*up);out.height=Math.round(ch*up);const o=out.getContext('2d',{willReadFrequently:true});
+  o.fillStyle='#fff';o.fillRect(0,0,out.width,out.height);o.imageSmoothingQuality='high';o.translate(out.width/2,out.height/2);o.rotate(rad);o.scale(up,up);o.filter='grayscale(1) contrast(1.35)';o.drawImage(src,-W/2,-H/2);
+  return{cv:out,angle:best}}
+/* Join two readings of the same page: keep, for each chapter number, the reading with a page number and a clean title. */
+function mergeToc(A,B){const m=new Map(),good=it=>(it.start!=null?2:0)+(tocSus(tocClean(it.name))?0:1);
+  [...A.items,...B.items].forEach(it=>{const o=m.get(it.n);if(!o||good(it)>good(o)||(good(it)===good(o)&&tocClean(it.name).length>tocClean(o.name).length&&!tocSus(tocClean(it.name))))m.set(it.n,Object.assign({},it,{start:it.start!=null?it.start:(o&&o.start)}));else if(o.start==null&&it.start!=null)o.start=it.start});
+  return{items:[...m.values()].sort((a,b)=>a.n-b.n),ends:[...(A.ends||[]),...(B.ends||[])]}}
 async function ocrReadToc(cvs,onProgress){await loadScript(window.TOC_LIBS.tess);const out=[];
   const worker=await Tesseract.createWorker('eng',1,window.TOC_LIBS.tessOpts);
-  try{for(let k=0;k<cvs.length;k++){onProgress('Reading page '+(k+1)+' of '+cvs.length+' on this device…',.3+.7*k/cvs.length);const{data}=await worker.recognize(cvs[k]);out.push(parseTocPage(data,cvs[k].width))}}
+  try{for(let k=0;k<cvs.length;k++){const f=.3+.7*k/cvs.length;
+      onProgress('Reading page '+(k+1)+' of '+cvs.length+' (pass 1 of 2)…',f);await worker.setParameters({tessedit_pageseg_mode:'3'});
+      const A=parseTocPage((await worker.recognize(cvs[k])).data,cvs[k].width);
+      onProgress('Reading page '+(k+1)+' of '+cvs.length+' (pass 2 of 2, straightened)…',f+.35/cvs.length);const pp=prepCanvas(cvs[k]);await worker.setParameters({tessedit_pageseg_mode:'6'});
+      const B=parseTocPage((await worker.recognize(pp.cv)).data,pp.cv.width);pp.cv.width=pp.cv.height=0;
+      out.push(mergeToc(A,B))}}
   finally{await worker.terminate()}
   return tocFinish(out)}
 async function tocRead(files,onProgress){const cvs=await renderPages(files,onProgress);let res,mode='ai',note='';
