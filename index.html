@@ -509,6 +509,13 @@ button:active{transform:scale(.97)}
 @media(max-width:560px){.revh{flex-wrap:wrap}.revl{margin-left:6px}}
 .rate{display:flex;gap:4px;flex:none}.rb{display:inline-flex;align-items:center;gap:3px;border:1px solid var(--line);border-radius:14px;padding:2px 7px;font-size:12px;background:var(--card);color:var(--muted)}.rb.on.good{background:#E7F7EC;border-color:#25D366;color:#137a3a}.rb.on.ok{background:#FFF6D6;border-color:#E3B400;color:#7a5d00}.rb.on.bad{background:#FDE8E7;border-color:#E53935;color:#a31d1a}
 .ri{align-items:flex-start;gap:8px}.ri.done .pln{text-decoration:none;color:var(--muted)}
+.rrbar{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:6px 0 10px;display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;font-size:13px}.rrbar label{display:flex;align-items:center;gap:6px}.rrbar input[type=time]{width:auto;padding:3px 6px}
+.brief .brs{margin:0 0 16px}.brief .brt{font:600 15px 'Space Grotesk',Inter,sans-serif;margin:0 0 6px;padding-bottom:4px;border-bottom:2px solid var(--line)}.brief .brs>p{margin:0 0 8px;font-size:12.5px}
+.brp{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 0 8px;background:var(--raise)}.brh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px}.brh .muted{font-size:12.5px}
+.rtag{color:#fff;font:700 12px Inter,sans-serif;padding:2px 8px;border-radius:6px}
+.brl{list-style:none;margin:6px 0 0;padding:0}.brl li{padding:5px 0 5px 10px;border-left:3px solid var(--line);margin:4px 0}.brl li b{display:block;font-size:14px;font-weight:600}.brl li small{color:var(--muted);font-size:12px}
+.almk{display:grid;gap:6px;margin:6px 0 10px}.almk label{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.gcl{display:flex;flex-wrap:wrap;gap:6px}.gcl a{font-size:12.5px;padding:5px 10px;border:1px solid var(--line);border-radius:16px;text-decoration:none;color:var(--text);background:var(--raise)}
 .revguide{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 14px;margin:6px 0 14px;font-size:13px}.revguide summary{cursor:pointer;font-weight:600}.revguide ol{margin:8px 0 2px;padding-left:20px;line-height:1.6}
 @media(max-width:560px){.ri{flex-wrap:wrap}.rb span{display:none}.rate{margin-left:auto}}
 </style>
@@ -1533,12 +1540,102 @@ function revisionHTML(){const P=revPeriods(),open=S.ui.revOpen||{},mode=S.settin
       <p class="muted" style="margin:-6px 0 8px;font-size:12.5px">${sub}</p>${isOpen?body:''}</div>`};
   const kf=(kind,icon,name,sub)=>{const L=P[kind];return folder(kind,icon,name,sub,L.length?L.map(perHTML).join(''):'<p class="muted" style="margin:0;font-size:13px">Nothing here yet. Finish tasks or log pages read and they will show here.</p>',L.filter(x=>x.due<=T()&&!perDone(x)).length,L.length+' folder'+(L.length===1?'':'s'))};
   const weak=W.length?folder('weak','⚠️','Weak topics','Items you rated 🟡 Partly or ❌ Forgot. Revise them the next day until you can mark ✅.',`<ul class="tl revl" style="margin-left:0">${W.map(it=>revItemHTML(it,'weak:'+it.key+'|'+it.key)).join('')}</ul>`,W.filter(x=>x.due<=T()).length,W.length+' item'+(W.length===1?'':'s')):'';
-  return`${REV_GUIDE}${weak}
+  return`${rrBar()}${REV_GUIDE}${weak}
     ${kf('day','⚡','R1 · Next-day recall','The day after you read: 10 minutes of recall from memory.')}
     ${kf('week','🗓️','R2 · Weekly revision','Every Sunday: revise what you read that week (Monday to Sunday).')}
     ${kf('second','🔂','R3 · Second revision (after 15 days)','Two weeks after the weekly revision, revise that week again.')}
     ${kf('month','📆','R4 · Monthly revision',`Everything read in the month. Revise on <select class="inp" id="revMode" style="display:inline-block;width:auto;padding:2px 6px;font-size:12.5px"><option value="lastSun" ${mode==='lastSun'?'selected':''}>the last Sunday of the month</option><option value="lastDay" ${mode==='lastDay'?'selected':''}>the last day of the month</option></select>`)}
     ${kf('quarter','🗂️','R5 · 3-month revision','Everything read in the quarter, to keep it fresh for the exam.')}`}
+/* ================= revision reminders ================= */
+/* In-app: a full popup each morning (and evening) with today's and tomorrow's revision.
+   Phone ringing: a web page cannot ring when it is closed, so repeating alarms are added to the phone calendar (.ics / Google Calendar). */
+const RK={day:['R1','#F59E0B'],week:['R2','#2563EB'],second:['R3','#7C3AED'],month:['R4','#059669'],quarter:['R5','#DB2777']};
+const revSet=()=>Object.assign({on:true,time:'07:00',eve:'20:00'},S.settings.revRem||{});
+const kindIdx=k=>KINDS.findIndex(x=>x[0]===k);
+function revOn(day,withLate){return Object.values(revPeriods()).flat().filter(x=>x.items.length&&!perDone(x)&&(withLate?x.due<=day&&(x.kind!=='day'||x.due>=addD(day,-1)):x.due===day)).sort((a,b)=>kindIdx(a.kind)-kindIdx(b.kind)||a.due.localeCompare(b.due))}
+const dayName=x=>{const d=pd(x);return DAYS[d.getDay()]+', '+fmtShort(x)};
+function briefItem(it){const p=proj(it.project),c=it.chapter&&chap(it.chapter);
+  const bits=[p?esc(p.name):'',c?'📖 '+esc(c.name):'',it.pages?it.pages+' pages':'',it.dates&&it.dates.length?'read '+it.dates.map(fmtShort).join(', '):'',it.rating?(it.rating==='bad'?'❌ forgot last time':'🟡 partly last time'):''].filter(Boolean);
+  return`<li><b>${esc(it.title)}</b><small>${bits.join(' · ')}</small></li>`}
+function briefPer(per){const[r,c]=RK[per.kind],nm=KINDS[kindIdx(per.kind)][2];
+  return`<div class="brp"><div class="brh"><span class="rtag" style="background:${c}">${r}</span><b>${esc(nm)}</b><span class="muted">${esc(per.label)} · ${per.items.length} item${per.items.length===1?'':'s'}</span>${per.due<T()?`<span class="revs late">due ${fmtShort(per.due)}</span>`:''}</div><ul class="brl">${per.items.map(briefItem).join('')}</ul></div>`}
+function revBriefData(){const t0=T(),t1=addD(t0,1);return{t0,t1,A:revOn(t0,true),W:weakItems().filter(x=>x.due<=t0),B:revOn(t1)}}
+function revBrief(auto){const{t0,t1,A,W,B}=revBriefData();
+  if(auto&&!A.length&&!W.length&&!B.length)return false;
+  const none='<p class="muted" style="margin:4px 0">Nothing to revise.</p>';
+  const weak=W.length?`<div class="brp"><div class="brh"><span class="rtag" style="background:#E53935">⚠️</span><b>Weak topics</b><span class="muted">${W.length} item${W.length===1?'':'s'}</span></div><ul class="brl">${W.map(briefItem).join('')}</ul></div>`:'';
+  showModal(`<div class="mh"><b>🔔 Revision reminder</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb brief">
+    <div class="brs"><div class="brt">Today · ${dayName(t0)}</div>${A.length||W.length?A.map(briefPer).join('')+weak:none}</div>
+    <div class="brs"><div class="brt">Tomorrow · ${dayName(t1)}</div><p class="muted">Keep these notes ready for tomorrow.</p>${B.length?B.map(briefPer).join(''):none}</div></div>
+    <div class="mf"><button type="button" class="btn sec" data-a="closeModal">Close</button><button type="button" class="btn pri" data-a="briefGo">Open Revision</button></div>`,'wide');
+  return true}
+function revNotify(){const{A,W,B}=revBriefData(),n=A.reduce((a,x)=>a+x.items.length,0)+W.length,m=B.reduce((a,x)=>a+x.items.length,0);if(!n&&!m)return;
+  const tags=L=>[...new Set(L.map(x=>RK[x.kind][0]))].join(' ');
+  const body=(n?`Today: ${n} item${n===1?'':'s'} ${tags(A)}${W.length?' + weak':''}`:'Today: nothing due')+(m?`\nTomorrow: ${m} item${m===1?'':'s'} ${tags(B)}`:'')+'\nTap to see the full list.';
+  try{if(!('Notification' in window)||Notification.permission!=='granted')return;
+    const o={body,tag:'rev-brief',renotify:true,requireInteraction:true,vibrate:[400,200,400,200,800],icon:'icons/icon-192.png',badge:'icons/icon-192.png',data:{url:'./#revision'}};
+    const plain=()=>{try{new Notification('🔔 Revision reminder',o)}catch(_){}};
+    if('serviceWorker' in navigator)navigator.serviceWorker.getRegistration().then(r=>r?r.showNotification('🔔 Revision reminder',o):plain()).catch(plain);else plain()}catch(_){}}
+function revBriefCheck(){try{if(!S||!S.settings||!S.ui)return;const s=revSet();if(!s.on)return;
+  const lg=document.getElementById('login');if(lg&&!lg.hidden)return;
+  if($('modalRoot').innerHTML)return;           /* wait until the person closes what they are doing */
+  const d=new Date(),hm=pad(d.getHours())+':'+pad(d.getMinutes()),t0=T(),F=S.ui.revFired=S.ui.revFired||{};
+  const passed=[['m',s.time],['e',s.eve]].filter(x=>x[1]&&hm>=x[1]);if(!passed.length)return;
+  const last=passed[passed.length-1];if(F[t0+last[0]])return;
+  passed.forEach(x=>F[t0+x[0]]=1);Object.keys(F).forEach(k=>{if(k.slice(0,10)<addD(t0,-7))delete F[k]});saveLocal();
+  if(revBrief(true))revNotify()}catch(e){console.warn('revBrief',e)}}
+function rrBar(){const s=revSet(),perm=('Notification' in window)?Notification.permission:'unsupported';
+  return`<div class="rrbar"><b>🔔 Reminders</b><label><input type="checkbox" id="rrOn" ${s.on?'checked':''}> Pop-up</label>
+    <label>Morning <input class="inp" type="time" id="rrT" value="${s.time||''}"></label><label>Evening <input class="inp" type="time" id="rrE" value="${s.eve||''}"></label>
+    <button class="pill" data-a="revBrief">👀 Show now</button>${perm==='default'?'<button class="pill" data-a="revPerm">🔔 Allow notifications</button>':''}<button class="pill" data-a="revAlarm">📅 Phone alarms</button></div>`}
+document.addEventListener('change',e=>{const t=e.target;if(!['rrOn','rrT','rrE'].includes(t.id))return;
+  const s=revSet();if(t.id==='rrOn')s.on=t.checked;if(t.id==='rrT')s.time=t.value;if(t.id==='rrE')s.eve=t.value;
+  S.settings.revRem=s;const F=S.ui.revFired||{};delete F[T()+'m'];delete F[T()+'e'];saveLocal();toast('Reminder time saved')});
+/* ---- phone calendar alarms: repeating events with alerts, so the phone/tablet rings even when TaskFlow is closed ---- */
+const icsEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/;/g,'\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+const icsD=(d,t)=>d.replace(/-/g,'')+'T'+t.replace(':','')+'00';
+function alarmRules(){const mode=S.settings.monthlyRev||'lastSun',t0=T(),last=mode==='lastDay'?'BYMONTHDAY=-1':'BYDAY=-1SU';
+  const nextSun=addD(t0,(7-pd(t0).getDay())%7);
+  const mDue=ym=>mode==='lastDay'?lastDayOf(ym):lastSunOf(ym);const ymOf=(y,m)=>`${y+Math.floor((m-1)/12)}-${pad((m-1)%12+1)}`;
+  const y=+t0.slice(0,4),m=+t0.slice(5,7);let mStart=mDue(ymOf(y,m));if(mStart<t0)mStart=mDue(ymOf(y,m+1));
+  let qm=Math.ceil(m/3)*3,qStart=mDue(ymOf(y,qm));if(qStart<t0)qStart=mDue(ymOf(y,qm+3));
+  return[
+    {k:'day',start:t0,rule:'FREQ=DAILY',name:'R1 · Next-day recall',what:'Recall what you read yesterday (10 minutes, from memory).'},
+    {k:'week',start:nextSun,rule:'FREQ=WEEKLY;BYDAY=SU',name:'R2 · Weekly revision',what:'Revise everything you read this week (Monday to Sunday).'},
+    {k:'second',start:nextSun,rule:'FREQ=WEEKLY;BYDAY=SU',name:'R3 · Second revision',what:'Revise the week you read 15 days ago (third week back).'},
+    {k:'month',start:mStart,rule:'FREQ=MONTHLY;'+last,name:'R4 · Monthly revision',what:'Revise everything you read this month.'},
+    {k:'quarter',start:qStart,rule:'FREQ=MONTHLY;INTERVAL=3;'+last,name:'R5 · 3-month revision',what:'Revise everything you read in these 3 months.'}]}
+function revICS(sel,time,before){const url=location.origin+location.pathname+'#revision',st=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d+/,'');
+  const L=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//TaskFlow//Revision alarms//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH','X-WR-CALNAME:TaskFlow revision'];
+  alarmRules().filter(r=>sel.includes(r.k)).forEach(r=>{
+    L.push('BEGIN:VEVENT','UID:taskflow-rev-'+r.k+'@taskflow.nokribook.in','DTSTAMP:'+st,'DTSTART:'+icsD(r.start,time),'DURATION:PT30M','RRULE:'+r.rule,
+      'SUMMARY:'+icsEsc('🔔 '+r.name+' (TaskFlow)'),'DESCRIPTION:'+icsEsc(r.what+'\nOpen TaskFlow → Revision for the full list of chapters and pages:\n'+url),'URL:'+url,
+      'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc(r.name),'TRIGGER:PT0M','END:VALARM');
+    if(before&&r.k!=='day')L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+icsEsc('Tomorrow: '+r.name),'TRIGGER:-P1D','END:VALARM');
+    L.push('END:VEVENT')});
+  L.push('END:VCALENDAR');
+  const fold=l=>{const c=[...l],o=[];for(let i=0;i<c.length;i+=60)o.push((i?' ':'')+c.slice(i,i+60).join(''));return o.join('\r\n')};
+  return L.map(fold).join('\r\n')+'\r\n'}
+function gcalLink(r,time){const a=icsD(r.start,time),[h,mi]=time.split(':').map(Number),e=new Date(2000,0,1,h,mi+30),b=r.start.replace(/-/g,'')+'T'+pad(e.getHours())+pad(e.getMinutes())+'00';
+  const u=location.origin+location.pathname+'#revision';
+  return'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent('🔔 '+r.name+' (TaskFlow)')+'&dates='+a+'/'+b+'&recur='+encodeURIComponent('RRULE:'+r.rule)+'&details='+encodeURIComponent(r.what+'\nOpen TaskFlow → Revision: '+u)}
+function revAlarmModal(){const s=revSet(),A=S.settings.revAlarm||{sel:['day','week','second','month','quarter'],time:s.time||'07:00',before:true};
+  showModal(`<div class="mh"><b>📅 Phone alarms for revision</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <p class="muted" style="margin:0 0 10px;font-size:13px">A website cannot ring by itself when it is closed. These repeating alarms go into your phone's or tablet's <b>Calendar</b>, which rings even when TaskFlow is closed. Tap the alert and then open TaskFlow to see the full list. Add them <b>once</b> on each device.</p>
+    <div class="almk">${KINDS.slice(0,5).map(([k,r,n])=>`<label><input type="checkbox" class="alk" value="${k}" ${A.sel.includes(k)?'checked':''}> <span class="rtag" style="background:${RK[k][1]}">${r}</span> ${esc(n)} <span class="muted" style="font-size:12px">· ${{day:'every day',week:'every Sunday',second:'every Sunday',month:(S.settings.monthlyRev==='lastDay'?'last day of month':'last Sunday of month'),quarter:'end of every 3 months'}[k]}</span></label>`).join('')}</div>
+    <div class="fld" style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><label style="display:flex;gap:6px;align-items:center">Alarm time <input class="inp" type="time" id="alT" value="${A.time}" style="width:auto"></label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="alB" ${A.before?'checked':''}> Also alert the day before (R2–R5)</label></div>
+    <div class="fld"><b style="font-size:13.5px">iPad / iPhone / Samsung phone</b><p class="muted" style="margin:2px 0 6px;font-size:12.5px">Download the file and open it. Tap <b>Add all</b> (iPad/iPhone) or <b>Import</b> (Samsung Calendar).</p><button type="button" class="btn pri" data-a="icsDl">⬇️ Download calendar alarms (.ics)</button></div>
+    <div class="fld"><b style="font-size:13.5px">Google Calendar (Android)</b><p class="muted" style="margin:2px 0 6px;font-size:12.5px">Tap each one and Save. In the event set the notification to <b>At time of event</b> and <b>1 day before</b>.</p><div class="gcl" id="gcl"></div></div></div>
+    <div class="mf"><button type="button" class="btn sec" data-a="closeModal">Close</button></div>`);
+  const upd=()=>{const sel=[...document.querySelectorAll('.alk')].filter(x=>x.checked).map(x=>x.value),time=$('alT').value||'07:00',before=$('alB').checked;
+    S.settings.revAlarm={sel,time,before};saveLocal();
+    $('gcl').innerHTML=alarmRules().filter(r=>sel.includes(r.k)).map(r=>`<a href="${esc(gcalLink(r,time))}" target="_blank" rel="noopener"><span class="rtag" style="background:${RK[r.k][1]};font-size:10.5px">${RK[r.k][0]}</span> Add ${esc(r.name.split('· ')[1])}</a>`).join('')||'<span class="muted" style="font-size:12.5px">Tick at least one.</span>'};
+  document.querySelectorAll('.alk,#alT,#alB').forEach(x=>x.onchange=upd);upd()}
+function icsDownload(){const A=S.settings.revAlarm||{sel:['day','week','second','month','quarter'],time:'07:00',before:true};if(!A.sel.length){toast('Tick at least one');return}
+  const txt=revICS(A.sel,A.time,A.before),name='TaskFlow-revision-alarms.ics';
+  const ios=/iPad|iPhone|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  if(ios){location.href='data:text/calendar;charset=utf-8,'+encodeURIComponent(txt);return}
+  const u=URL.createObjectURL(new Blob([txt],{type:'text/calendar'})),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000);toast('Alarms file downloaded. Open it to add to Calendar.')}
 function findPer(k){return Object.values(revPeriods()).flat().find(x=>x.key===k)}
 document.addEventListener('change',e=>{const t=e.target;if(view!=='revision')return;
   if(t.id==='revMode'){S.settings.monthlyRev=t.value;saveLocal();render()}});
@@ -2141,6 +2238,11 @@ document.addEventListener('click',e=>{
   case'revToday':{stop();const per=findPer(b.dataset.k);if(!per)break;snap();const nm={day:'Next-day recall',week:'Weekly revision',second:'Second revision',month:'Monthly revision',quarter:'3-month revision'}[per.kind];
     addTask({title:`${nm}: ${per.label}`,due:T(),project:'inbox',subs:per.items.map(it=>({id:uid(),title:it.title+(it.chapter&&chap(it.chapter)?' — '+chap(it.chapter).name:''),done:!!rateOf(rdKey(per,it))}))});commit("Added to Today's task",true);break}
   case'goBin':stop();closeModal();go('bin');break;
+  case'revBrief':stop();revBrief(false);break;
+  case'briefGo':stop();closeModal();go('revision');break;
+  case'revAlarm':stop();revAlarmModal();break;
+  case'icsDl':stop();icsDownload();break;
+  case'revPerm':stop();try{Notification.requestPermission().then(()=>render())}catch(_){}break;
   case'formatAll':stop();formatModal();break;
   case'binRestore':stop();binRestore(id);break;
   case'binDel':{stop();const x=b;if(!x.dataset.sure){x.dataset.sure=1;x.innerHTML='Delete forever?';x.classList.add('btn','danger');x.classList.remove('ibtn');return}snap();S.bin=S.bin.filter(i=>i.id!==id);commit('Deleted forever',true);break}
@@ -2232,7 +2334,7 @@ document.addEventListener('scroll',e=>{if(e.target.id==='content')$('crumb').cla
 /* ================= boot ================= */
 view='today';if(location.hash&&location.hash!=='#today')history.replaceState(null,'',location.pathname+location.search+'#today');
 wireWeekly();
-setInterval(checkReminders,15000);setTimeout(checkReminders,3000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});
+setInterval(checkReminders,15000);setTimeout(checkReminders,3000);setInterval(revBriefCheck,20000);setTimeout(revBriefCheck,2500);document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(revBriefCheck,800)});document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});
 render();
 initCloud();
 </script>
