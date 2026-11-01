@@ -705,7 +705,7 @@ function demoData(){
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||S.v!==2)S=sampleData();
-function ensure(x){['books','reminders','exams','chapters','pending'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});if(!x.revDone||typeof x.revDone!=='object'||Array.isArray(x.revDone))x.revDone={};return x}
+function ensure(x){['books','reminders','exams','chapters','pending','bin'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});if(!x.revDone||typeof x.revDone!=='object'||Array.isArray(x.revDone))x.revDone={};return x}
 ensure(S);
 /* ================= cloud sync (Firebase Realtime Database) ================= */
 const FB_CFG={
@@ -740,7 +740,7 @@ function mergeData(local,remote){
   const lt=(local.tasks||[]).filter(t=>!t.sample);
   const out=remote;
   out.tasks=byId(remote.tasks,lt);
-  ['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>out[k]=byId(remote[k],local[k]));
+  ['projects','sections','labels','filters','books','reminders','exams','chapters','pending','bin'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.revDone=Object.assign({},remote.revDone||{},local.revDone||{});
@@ -820,6 +820,7 @@ function profileModal(){
     <p class="quote" style="margin:6px 0 16px">“${quote()}”</p>
     <div class="fld" style="text-align:left"><label for="prN">Your name</label><input class="inp" id="prN" placeholder="Add your name" value="${esc(nameSet()?S.user.name:'')}" maxlength="40" autocomplete="off"></div>
     <div style="text-align:left"><div style="font-weight:600;font-size:13px;margin-bottom:6px">Appearance</div><div class="seg" id="prTh">${seg}</div></div>
+    <div style="text-align:left;margin-top:16px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" data-a="goBin">🗑️ Recycle bin${S.bin.length?' ('+S.bin.length+')':''}</button><button class="btn danger" data-a="formatAll">Format all data</button></div>
   </div>
   <div class="mf" style="justify-content:space-between">${u?'<button class="btn danger" data-a="signOut">Log out</button>':`<button class="gbtn" data-a="signIn" style="width:auto;padding:8px 14px">${GLOGO}<span>Sign in with Google</span></button>`}<button class="btn pri" data-a="closeModal">Done</button></div>`);
   const m=document.querySelector('.modal');
@@ -931,7 +932,7 @@ async function driveRestore(id){
   snap();
   let added=0;
   const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
-  ensure(S);['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>addMissing(k,lv[k]));
+  ensure(S);['projects','sections','labels','filters','books','reminders','exams','chapters','pending','bin'].forEach(k=>addMissing(k,lv[k]));
   addMissing('tasks',[...(lv.tasks||[]),...p.archive.tasks].filter(t=>!t.sample));
   addMissing('log',[...(lv.log||[]),...p.archive.log]);
   ['topics'].forEach(k=>{if(Array.isArray(lv[k])){S[k]=S[k]||[];addMissing(k,lv[k])}});
@@ -1044,17 +1045,17 @@ const hashOf=v=>v.replace(':','-');
 const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plfb])-(.+)$/);return m?m[1]+':'+m[2]:h};
 function go(v){if(location.hash.slice(1)!==hashOf(v))location.hash=hashOf(v);else{view=v;render()}$('app').classList.remove('drawer')}
 window.addEventListener('hashchange',()=>{view=viewOf(location.hash);if(!validView(view))view='today';track(view);render();$('content').scrollTop=0});
-function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','pending','revision'].includes(v)}
+function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','pending','revision','bin'].includes(v)}
 function track(v){if(v==='search')return;S.recent=[v,...S.recent.filter(x=>x!==v)].slice(0,8);save()}
 function viewName(v){const[k,id]=v.split(':');
   if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
-  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',pending:'Pending',revision:'Revision'}[v]}
+  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',pending:'Pending',revision:'Revision',bin:'Recycle bin'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
   if(k==='b')return`<span class="emo">📖</span>`;
   if(k==='p')return isFolder(id)?`<span class="emo">📁</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',pending:'⏳',revision:'🔁'}[v]||'📄'}</span>`}
+  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',pending:'⏳',revision:'🔁',bin:'🗑️'}[v]||'📄'}</span>`}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -1142,6 +1143,7 @@ function renderSide(){const c=counts();
     <div class="side-foot">
       <div class="nav-i" role="button" tabindex="0" data-a="go" data-v="projects"><span class="ico">✏️</span><span class="lab">Manage subjects</span></div>
       ${window.tfInstallable&&window.tfInstallable()?`<div class="nav-i" role="button" tabindex="0" data-a="install"><span class="ico">📲</span><span class="lab">Install app</span></div>`:''}
+      ${navItem('bin','Recycle bin',S.bin.length?`<span class="n">${S.bin.length}</span>`:'')}
       <div class="nav-i" role="button" tabindex="0" data-a="settings"><span class="ico">⚙️</span><span class="lab">Settings</span></div>
     </div>
   </div>`}
@@ -1540,6 +1542,38 @@ function revisionHTML(){const P=revPeriods(),open=S.ui.revOpen||{},mode=S.settin
 function findPer(k){return Object.values(revPeriods()).flat().find(x=>x.key===k)}
 document.addEventListener('change',e=>{const t=e.target;if(view!=='revision')return;
   if(t.id==='revMode'){S.settings.monthlyRev=t.value;saveLocal();render()}});
+/* ================= recycle bin ================= */
+const BIN_KINDS={task:'Task',subject:'Subject',chapter:'Chapter',book:'Book',reminder:'Reminder',exam:'Exam',label:'Label',filter:'Filter',format:'All data (format)'};
+const FMT_KEYS=['tasks','projects','sections','labels','filters','books','reminders','exams','chapters','pending','log','topics'];
+function toBin(kind,label,data){S.bin=S.bin||[];S.bin.push({id:uid(),kind,label:String(label||'').slice(0,200),data,deletedAt:Date.now()})}
+function binHTML(){const L=S.bin.slice().sort((a,b)=>b.deletedAt-a.deletedAt);
+  if(!L.length)return empty('project','Recycle bin is empty','Anything you delete comes here first, so you can bring it back.','');
+  const sub=x=>{if(x.kind==='subject')return`${x.data.projects.length} subject${x.data.projects.length>1?'s':''} · ${x.data.tasks.length} task${x.data.tasks.length===1?'':'s'} · ${(x.data.chapters||[]).length} chapters`;
+    if(x.kind==='format'){const d=x.data||{};return`${(d.tasks||[]).length} tasks · ${(d.projects||[]).length} subjects · ${(d.chapters||[]).length} chapters · ${(d.books||[]).length} books`}return''};
+  return`<div style="display:flex;justify-content:space-between;align-items:center;margin:6px 0 12px;gap:8px;flex-wrap:wrap"><p class="muted" style="margin:0;font-size:13px">Deleted items stay here until you delete them forever.</p><button class="btn danger" data-a="binEmpty">Empty recycle bin</button></div>
+  <ul class="tl">${L.map(x=>{const d=new Date(x.deletedAt);return`<li class="task" style="align-items:center"><span class="emo" style="font-size:18px">${x.kind==='format'?'💾':'🗑️'}</span><div class="tbody"><div class="tt">${esc(x.label||'(no name)')}</div><div class="tm"><span>${BIN_KINDS[x.kind]||x.kind}</span><span>Deleted ${d.getDate()} ${MON[d.getMonth()]} ${pad(d.getHours())}:${pad(d.getMinutes())}</span>${sub(x)?`<span>${sub(x)}</span>`:''}</div></div>
+    <span style="display:flex;gap:6px;align-items:center;flex:none"><button class="btn pri" data-a="binRestore" data-id="${x.id}">Restore</button><button class="ibtn" data-a="binDel" data-id="${x.id}" aria-label="Delete forever">${ic('x')}</button></span></li>`}).join('')}</ul>`}
+function binRestore(id){const x=S.bin.find(b=>b.id===id);if(!x)return;snap();
+  const add=(k,list)=>{S[k]=S[k]||[];const have=new Set(S[k].map(i=>i.id));(list||[]).forEach(i=>{if(i&&!have.has(i.id)){S[k].push(i);have.add(i.id)}})};
+  const d=x.data;
+  if(x.kind==='task'){add('tasks',[d]);S.pending=S.pending.filter(p=>p.id!==d.id);if(d.project!=='inbox'&&!proj(d.project))d.project='inbox'}
+  else if(x.kind==='subject'){add('projects',d.projects);S.projects.forEach(p=>{if(p.parent&&!proj(p.parent))p.parent=null});add('tasks',d.tasks);add('sections',d.sections);add('chapters',d.chapters)}
+  else if(x.kind==='chapter'){add('chapters',[d.chapter]);(d.tasks||[]).forEach(tid=>{const t=S.tasks.find(t=>t.id===tid);if(t&&!t.chapter)t.chapter=d.chapter.id})}
+  else if(x.kind==='book')add('books',[d]);else if(x.kind==='reminder')add('reminders',[d]);else if(x.kind==='exam')add('exams',[d]);
+  else if(x.kind==='label')add('labels',[d]);else if(x.kind==='filter')add('filters',[d]);
+  else if(x.kind==='format'){FMT_KEYS.forEach(k=>{if(Array.isArray(d[k]))add(k,d[k])});S.revDone=Object.assign({},d.revDone||{},S.revDone||{});if(d.user&&!nameSet())S.user=Object.assign({},S.user,d.user)}
+  S.bin=S.bin.filter(b=>b.id!==id);commit('Restored',true)}
+function formatModal(){closeModal();
+  showModal(`<form id="fmF"><div class="mh"><b>Format all data</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
+    <p style="margin:0 0 8px">This clears all tasks, subjects, chapters, books, reminders, exams, labels, filters and history from this account on every device.</p>
+    <p style="margin:0 0 12px" class="muted">A full copy goes to the <b>Recycle bin</b>, so you can restore everything later. To remove it for good, delete it from the Recycle bin.</p>
+    <div class="fld"><label for="fmIn">Type <b>FORMAT</b> to confirm</label><input class="inp" id="fmIn" autocomplete="off" autocapitalize="characters"></div></div>
+    <div class="mf"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn danger" id="fmGo" disabled>Format</button></div></form>`);
+  setTimeout(()=>$('fmIn').focus(),0);$('fmIn').addEventListener('input',e=>{$('fmGo').disabled=e.target.value.trim().toUpperCase()!=='FORMAT'});
+  $('fmF').onsubmit=e=>{e.preventDefault();if($('fmIn').value.trim().toUpperCase()!=='FORMAT')return;snap();
+    const snapData={user:JSON.parse(JSON.stringify(S.user||{})),revDone:JSON.parse(JSON.stringify(S.revDone||{}))};FMT_KEYS.forEach(k=>{if(Array.isArray(S[k]))snapData[k]=JSON.parse(JSON.stringify(S[k]))});
+    const d=new Date();toBin('format',`All data · ${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`,snapData);
+    FMT_KEYS.forEach(k=>{if(Array.isArray(S[k]))S[k]=[]});S.revDone={};S.ui.upStart=null;closeModal();view='today';location.hash='today';commit('All data formatted · copy kept in Recycle bin')}}
 /* ================= books ================= */
 function booksHTML(){
   const rows=S.books.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>{const ts=S.tasks.filter(t=>t.book===b.id),dn=ts.filter(t=>t.done).length,sj=b.subject&&proj(b.subject)?proj(b.subject).name:'';
@@ -1572,7 +1606,7 @@ function editBook(id){const b=id?book(id):{name:'',author:'',subject:'',notes:''
     if(id)Object.assign(b,o);else S.books.push(Object.assign({id:uid(),created:Date.now()},o));
     closeModal();commit(id?'Book saved':'Book added',true)};
   if(id)$('bfDel').onclick=e=>{const x=e.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}
-    snap();S.books=S.books.filter(y=>y.id!==id);S.tasks.forEach(t=>{if(t.book===id)t.book=null});closeModal();if(view==='b:'+id)go('books');commit('Book deleted',true)}}
+    snap();toBin('book',b.name,JSON.parse(JSON.stringify(b)));S.books=S.books.filter(y=>y.id!==id);S.tasks.forEach(t=>{if(t.book===id)t.book=null});closeModal();if(view==='b:'+id)go('books');commit('Book deleted',true)}}
 function numPop(anchor,label,cur,cb){openPop(anchor,(el,close)=>{
   el.innerHTML=`<div style="padding:8px;display:flex;gap:6px"><input class="inp" id="numIn" type="number" min="0" step="1" inputmode="numeric" placeholder="${esc(label)}" value="${cur||''}" style="width:150px"><button type="button" class="btn pri" id="numOk">Save</button></div>`;
   const inp=el.querySelector('#numIn');setTimeout(()=>inp.focus(),0);
@@ -1626,7 +1660,7 @@ function editRem(id,defDate){const r=id?S.reminders.find(x=>x.id===id):{title:''
     if(S.ui.remFired)delete S.ui.remFired[id||''];
     if(o.time&&'Notification' in window&&Notification.permission==='default'){try{Notification.requestPermission().then(()=>{if(view==='reminders')render()})}catch(_){}}
     closeModal();commit(id?'Reminder saved':'Reminder added',true)};
-  if(id)$('rmDel').onclick=()=>{snap();S.reminders=S.reminders.filter(x=>x.id!==id);closeModal();commit('Reminder deleted',true)}}
+  if(id)$('rmDel').onclick=()=>{snap();toBin('reminder',r.title,JSON.parse(JSON.stringify(r)));S.reminders=S.reminders.filter(x=>x.id!==id);closeModal();commit('Reminder deleted',true)}}
 function toggleRem(id){const r=S.reminders.find(x=>x.id===id);if(!r)return;snap();
   if(!r.done&&r.repeat&&r.repeat!=='none'){let g=0;do{r.date=nextRemDate(r)}while(r.date<=T()&&++g<800);if(S.ui.remFired)delete S.ui.remFired[id];commit('Done. Next on '+fmtShort(r.date),true);return}
   r.done=!r.done;r.doneAt=r.done?Date.now():null;commit(r.done?'Reminder done':'Reminder reopened',true)}
@@ -1679,7 +1713,7 @@ function editExam(id){const e=id?S.exams.find(x=>x.id===id):{name:'',date:'',sub
     const o={name:n,date:dt,subjects:[...document.querySelectorAll('input[name=efS]:checked')].map(x=>x.value),notes:$('efT').value.trim()};
     if(id)Object.assign(e,o);else S.exams.push(Object.assign({id:uid(),created:Date.now()},o));
     closeModal();commit(id?'Exam saved':'Exam added',true)};
-  if(id)$('efDel').onclick=ev=>{const x=ev.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}snap();S.exams=S.exams.filter(y=>y.id!==id);closeModal();commit('Exam deleted',true)}}
+  if(id)$('efDel').onclick=ev=>{const x=ev.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}snap();{const ex=S.exams.find(y=>y.id===id);if(ex)toBin('exam',ex.name,JSON.parse(JSON.stringify(ex)))}S.exams=S.exams.filter(y=>y.id!==id);closeModal();commit('Exam deleted',true)}}
 
 /* ================= task calendar ================= */
 function taskCalHTML(){
@@ -1733,6 +1767,7 @@ function render(){
   else if(v==='books')body=booksHTML();
   else if(v==='pending')body=pendingHTML();
   else if(v==='revision')body=revisionHTML();
+  else if(v==='bin')body=binHTML();
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
@@ -1758,7 +1793,7 @@ function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;snap();
   else{const i=S.log.map(e=>e.taskId).lastIndexOf(t.id);if(i>=0)S.log.splice(i,1)}
   pulse(id);setTimeout(()=>commit(t.done?'1 task completed':'Task reopened',true),t.done?220:0)}
 function pulse(id){document.querySelectorAll(`[data-id="${id}"].task,[data-id="${id}"].card`).forEach(el=>el.classList.add('popping','done'))}
-function deleteTask(id){snap();const dt=S.tasks.find(t=>t.id===id);if(dt&&!dt.done&&!dt.sample)S.pending.push(Object.assign(JSON.parse(JSON.stringify(dt)),{deletedAt:Date.now()}));S.tasks=S.tasks.filter(t=>t.id!==id);if(detailId===id)closeModal();commit(dt&&!dt.done&&!dt.sample?'Task moved to Pending':'Task deleted',true)}
+function deleteTask(id){snap();const dt=S.tasks.find(t=>t.id===id);if(dt&&!dt.sample)toBin('task',dt.title,JSON.parse(JSON.stringify(dt)));if(dt&&!dt.done&&!dt.sample)S.pending.push(Object.assign(JSON.parse(JSON.stringify(dt)),{deletedAt:Date.now()}));S.tasks=S.tasks.filter(t=>t.id!==id);if(detailId===id)closeModal();commit(dt&&!dt.done&&!dt.sample?'Task moved to Pending':'Task deleted',true)}
 function duplicateTask(id){const t=S.tasks.find(x=>x.id===id);snap();const c=JSON.parse(JSON.stringify(t));c.id=uid();c.created=Date.now();c.order=t.order+.5;c.sample=false;S.tasks.push(c);normalizeOrder();commit('Task duplicated',true)}
 function normalizeOrder(){[...S.tasks].sort((a,b)=>a.order-b.order).forEach((t,i)=>t.order=i)}
 function addTask(o){const t=Object.assign({id:uid(),title:'',desc:'',project:'inbox',section:null,priority:4,due:null,time:null,recur:null,deadline:null,labels:[],subs:[],done:false,doneAt:null,created:Date.now(),order:S.tasks.length?Math.max(...S.tasks.map(x=>x.order))+1:0},o);
@@ -1945,7 +1980,8 @@ function editProject(id,parentDef=null,asFolder=false){const p=id?proj(id):{name
     else{const np={id:uid(),name:n,color:col(),parent:par,fav:$('pfF').checked,archived:false,order:S.projects.length,folder:isF};S.projects.push(np);closeModal();go('p:'+np.id);commit(isF?'Folder added':'Subject added',true);return}
     closeModal();commit('Saved',true)};
   if(id){$('pfDel').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;const n=S.tasks.filter(t=>[id,...descendants(id)].includes(t.project)).length;b.textContent=`Delete ${n} task${n===1?'':'s'} too? Tap again`;return}
-      snap();const ids=[id,...descendants(id)];S.projects=S.projects.filter(x=>!ids.includes(x.id));S.tasks=S.tasks.filter(t=>!ids.includes(t.project));S.sections=S.sections.filter(s=>!ids.includes(s.project));
+      snap();const ids=[id,...descendants(id)],cp=x=>JSON.parse(JSON.stringify(x));toBin('subject',proj(id).name,{projects:cp(S.projects.filter(x=>ids.includes(x.id))),tasks:cp(S.tasks.filter(t=>ids.includes(t.project))),sections:cp(S.sections.filter(s=>ids.includes(s.project))),chapters:cp(S.chapters.filter(c=>ids.includes(c.project)))});
+      S.projects=S.projects.filter(x=>!ids.includes(x.id));S.tasks=S.tasks.filter(t=>!ids.includes(t.project));S.sections=S.sections.filter(s=>!ids.includes(s.project));S.chapters=S.chapters.filter(c=>!ids.includes(c.project));
       closeModal();if(view.startsWith('p:')&&ids.includes(view.slice(2)))go('today');commit('Deleted',true)};
     $('pfArc').onclick=()=>{snap();[id,...descendants(id)].forEach(x=>proj(x).archived=true);closeModal();if(view==='p:'+id)go('projects');commit('Archived',true)}}}
 function editLabel(id){const l=id?label(id):{name:'',color:'#db4035',fav:false};
@@ -1956,7 +1992,7 @@ function editLabel(id){const l=id?label(id):{name:'',color:'#db4035',fav:false};
   const col=wireSw();setTimeout(()=>$('lfN').focus(),0);
   $('lf').onsubmit=e=>{e.preventDefault();const n=$('lfN').value.trim().replace(/\s+/g,'_');if(!n)return;snap();
     if(id)Object.assign(l,{name:n,color:col(),fav:$('lfF').checked});else S.labels.push({id:uid(),name:n,color:col(),fav:$('lfF').checked});closeModal();commit('Label saved',true)};
-  if(id)$('lfDel').onclick=()=>{snap();S.labels=S.labels.filter(x=>x.id!==id);S.tasks.forEach(t=>t.labels=t.labels.filter(x=>x!==id));S.filters.forEach(f=>f.q.labels=f.q.labels.filter(x=>x!==id));closeModal();if(view==='l:'+id)go('filters');commit('Label deleted',true)}}
+  if(id)$('lfDel').onclick=()=>{snap();{const l=label(id);if(l)toBin('label',l.name,JSON.parse(JSON.stringify(l)))}S.labels=S.labels.filter(x=>x.id!==id);S.tasks.forEach(t=>t.labels=t.labels.filter(x=>x!==id));S.filters.forEach(f=>f.q.labels=f.q.labels.filter(x=>x!==id));closeModal();if(view==='l:'+id)go('filters');commit('Label deleted',true)}}
 function editFilter(id){const f=id?filt(id):{name:'',color:'#884dff',fav:false,q:{pri:[],labels:[],projects:[],due:'any'}};
   showModal(`<form id="ff"><div class="mh"><b>${id?'Edit filter':'Add filter'}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb">
     <div class="fld"><label for="ffN">Name</label><input class="inp" id="ffN" value="${esc(f.name)}" autocomplete="off"></div>
@@ -1973,7 +2009,7 @@ function editFilter(id){const f=id?filt(id):{name:'',color:'#884dff',fav:false,q
     const qq={pri:vals('pri').map(Number),labels:vals('lab'),projects:vals('prj'),due:$('ffD').value};
     if(id)Object.assign(f,{name:n,color:col(),fav:$('ffF').checked,q:qq});else{const nf={id:uid(),name:n,color:col(),fav:$('ffF').checked,q:qq};S.filters.push(nf);closeModal();go('f:'+nf.id);commit('Filter added',true);return}
     closeModal();commit('Filter saved',true)};
-  if(id)$('ffDel').onclick=()=>{snap();S.filters=S.filters.filter(x=>x.id!==id);closeModal();if(view==='f:'+id)go('filters');commit('Filter deleted',true)}}
+  if(id)$('ffDel').onclick=()=>{snap();{const f=filt(id);if(f)toBin('filter',f.name,JSON.parse(JSON.stringify(f)))}S.filters=S.filters.filter(x=>x.id!==id);closeModal();if(view==='f:'+id)go('filters');commit('Filter deleted',true)}}
 function promptModal(title,val,cb,btn='Save'){showModal(`<form id="pm"><div class="mh"><b>${esc(title)}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><input class="inp" id="pmI" value="${esc(val)}" autocomplete="off"></div><div class="mf"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">${btn}</button></div></form>`);
   setTimeout(()=>{$('pmI').focus();$('pmI').select()},0);$('pm').onsubmit=e=>{e.preventDefault();const v=$('pmI').value.trim();if(!v)return;closeModal();cb(v)}}
 
@@ -2017,10 +2053,9 @@ function drawSettings(){
     <div class="l" style="font-weight:600;font-size:13px;margin:18px 0 4px">Shortcuts</div>
     <p class="muted" style="margin:0;font-size:13px"><b>Q</b> quick add · <b>/</b> search · <b>G</b> then <b>T</b>/<b>U</b>/<b>I</b> go to Today / Upcoming / No subject · <b>Esc</b> close</p>
     <div class="l" style="font-weight:600;font-size:13px;margin:18px 0 4px">Data</div>
-    <button class="btn danger" id="stReset" style="padding-left:0">Reset all data</button>`;
+    <button class="btn danger" id="stReset" style="padding-left:0">Format all data</button>`;
     $('stW').onchange=e=>{S.settings.weekStart=+e.target.value;S.ui.upStart=null;commit()};
-    $('stReset').onclick=e=>{const b=e.currentTarget;if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to erase everything';return}
-      snap();S=sampleData();S.tasks=[];S.log=[];S.ui.upStart=null;applyTheme();closeModal();commit('All data reset',true)}}
+    $('stReset').onclick=()=>formatModal()}
   else{
     const dark=isDarkNow(),sync=S.settings.syncTheme!==false,mode=S.settings.theme,cur=THEMES.some(x=>x.id===S.settings.color)?S.settings.color:'classic';
     const card=t=>{const v=themeVars(t.id,dark);return`<button class="tcard ${t.id===cur?'on':''}" data-ct="${t.id}" aria-pressed="${t.id===cur}" aria-label="${t.name} theme" style="--pacc:${v.btn};--pbg:${v.bg};--pside:${v.sb};--pline:${v.line}"><span class="ps"><i></i><i></i><i></i><i></i></span><span class="pm"><span class="pn"><span>${t.name}</span>${t.id===cur?ic('check'):''}</span><span class="pl"><b></b><u></u></span><span class="pl"><b></b><u class="s"></u></span></span></button>`};
@@ -2091,8 +2126,8 @@ document.addEventListener('click',e=>{
   case'secTog':S.ui[b.dataset.k]=!S.ui[b.dataset.k];save();render();break;
   case'toggleSide':if(innerWidth<=860)$('app').classList.toggle('drawer');else $('app').classList.toggle('collapsed');break;
   case'install':stop();window.tfInstall&&window.tfInstall();break;
-  case'remDelDt':{stop();snap();S.reminders=S.reminders.filter(r=>r.id!==id);commit('Reminder removed',true);break}
-  case'penRestart':{stop();const t=S.pending.find(x=>x.id===id);if(!t)break;snap();S.pending=S.pending.filter(x=>x.id!==id);const c=JSON.parse(JSON.stringify(t));delete c.deletedAt;c.due=T();c.done=false;c.doneAt=null;if(c.project!=='inbox'&&!proj(c.project))c.project='inbox';if(c.chapter&&!chap(c.chapter))c.chapter=null;if(S.tasks.some(x=>x.id===c.id))c.id=uid();c.order=S.tasks.length?Math.max(...S.tasks.map(x=>x.order))+1:0;S.tasks.push(c);commit('Restarted for today',true);break}
+  case'remDelDt':{stop();snap();{const r=S.reminders.find(x=>x.id===id);if(r)toBin('reminder',r.title,JSON.parse(JSON.stringify(r)))}S.reminders=S.reminders.filter(r=>r.id!==id);commit('Reminder removed',true);break}
+  case'penRestart':{stop();const t=S.pending.find(x=>x.id===id);if(!t)break;snap();S.pending=S.pending.filter(x=>x.id!==id);S.bin=S.bin.filter(x=>!(x.kind==='task'&&x.data&&x.data.id===id));const c=JSON.parse(JSON.stringify(t));delete c.deletedAt;c.due=T();c.done=false;c.doneAt=null;if(c.project!=='inbox'&&!proj(c.project))c.project='inbox';if(c.chapter&&!chap(c.chapter))c.chapter=null;if(S.tasks.some(x=>x.id===c.id))c.id=uid();c.order=S.tasks.length?Math.max(...S.tasks.map(x=>x.order))+1:0;S.tasks.push(c);commit('Restarted for today',true);break}
   case'lateToday':{stop();const t=S.tasks.find(x=>x.id===id);if(t){snap();t.due=T();commit('Moved to today',true)}break}
   case'penDel':{stop();snap();S.pending=S.pending.filter(x=>x.id!==id);commit('Removed forever',true);break}
   case'chToday':{stop();const c=chap(id);if(!c)break;const left=c.pages>0?Math.max(0,c.pages-chapRead(c)):0;
@@ -2105,12 +2140,17 @@ document.addEventListener('click',e=>{
   case'revAll':{stop();const per=findPer(b.dataset.k);if(!per)break;snap();const all=perDone(per);per.items.forEach(it=>{if(all)delete S.revDone[rdKey(per,it)];else if(!rateOf(rdKey(per,it)))S.revDone[rdKey(per,it)]={r:'good',at:Date.now()}});commit(all?'Cleared':'All marked remembered',true);break}
   case'revToday':{stop();const per=findPer(b.dataset.k);if(!per)break;snap();const nm={day:'Next-day recall',week:'Weekly revision',second:'Second revision',month:'Monthly revision',quarter:'3-month revision'}[per.kind];
     addTask({title:`${nm}: ${per.label}`,due:T(),project:'inbox',subs:per.items.map(it=>({id:uid(),title:it.title+(it.chapter&&chap(it.chapter)?' — '+chap(it.chapter).name:''),done:!!rateOf(rdKey(per,it))}))});commit("Added to Today's task",true);break}
+  case'goBin':stop();closeModal();go('bin');break;
+  case'formatAll':stop();formatModal();break;
+  case'binRestore':stop();binRestore(id);break;
+  case'binDel':{stop();const x=b;if(!x.dataset.sure){x.dataset.sure=1;x.innerHTML='Delete forever?';x.classList.add('btn','danger');x.classList.remove('ibtn');return}snap();S.bin=S.bin.filter(i=>i.id!==id);commit('Deleted forever',true);break}
+  case'binEmpty':{stop();if(!b.dataset.sure){b.dataset.sure=1;b.textContent='Tap again to delete everything forever';return}snap();S.bin=[];commit('Recycle bin emptied',true);break}
   case'chAdd':stop();addChapter(id);break;
   case'chFoldAdd':stop();addChFolder(id);break;
   case'chFoldTog':{stop();S.ui.chCol=S.ui.chCol||{};S.ui.chCol[b.dataset.k]=!S.ui.chCol[b.dataset.k];save();render();break}
   case'chFoldDel':{stop();const p=proj(id);if(p){snap();p.chFolders=(p.chFolders||[]).filter(x=>x!==b.dataset.k);S.chapters.forEach(c=>{if(c.project===id&&c.group===b.dataset.k)c.group=''});commit('Folder deleted (chapters kept)',true)}break}
   case'chImport':stop();tocImport(id);break;
-  case'chDel':{stop();const c=chap(id);if(c){snap();S.chapters=S.chapters.filter(x=>x.id!==id);S.tasks.forEach(t=>{if(t.chapter===id)t.chapter=null});commit('Chapter deleted',true)}break}
+  case'chDel':{stop();const c=chap(id);if(c){snap();toBin('chapter',c.name,{chapter:JSON.parse(JSON.stringify(c)),tasks:S.tasks.filter(t=>t.chapter===id).map(t=>t.id)});S.chapters=S.chapters.filter(x=>x.id!==id);S.tasks.forEach(t=>{if(t.chapter===id)t.chapter=null});commit('Chapter deleted',true)}break}
   case'closeDrawer':$('app').classList.remove('drawer');break;
   case'quickAdd':stop();let add={};try{add=JSON.parse(b.dataset.add||'{}')}catch(_){}quickAdd(add);break;
   case'toggle':stop();toggleTask(id);break;
@@ -2138,7 +2178,7 @@ document.addEventListener('click',e=>{
   case'chapDel':{stop();const bk=book(id);if(bk){snap();bk.chapters=(bk.chapters||[]).filter(c=>c.id!==b.dataset.c);commit('Chapter removed',true)}break}
   case'editRem':stop();editRem(id,b.dataset.d);break;
   case'remToggle':stop();toggleRem(id);break;
-  case'remDel':{stop();snap();S.reminders=S.reminders.filter(x=>x.id!==id);commit('Reminder deleted',true);break}
+  case'remDel':{stop();snap();{const r=S.reminders.find(x=>x.id===id);if(r)toBin('reminder',r.title,JSON.parse(JSON.stringify(r)))}S.reminders=S.reminders.filter(x=>x.id!==id);commit('Reminder deleted',true);break}
   case'remClear':snap();S.reminders=S.reminders.filter(x=>!x.done);commit('Completed reminders cleared',true);break;
   case'remPerm':try{Notification.requestPermission().then(()=>render())}catch(_){}break;
   case'editExam':stop();editExam(id);break;
