@@ -493,6 +493,7 @@ button:active{transform:scale(.97)}
 .task{border:0;background:var(--card);box-shadow:none}
 .task:hover{background:var(--hover)}
 .nkc.out{opacity:.4}.nkc.sel{border-color:var(--strong)}
+.pgwrap{margin-top:6px;display:flex;flex-direction:column;gap:3px;width:100%}.pgtrack{height:6px;border-radius:4px;background:#f2d36b66;overflow:hidden}.pgtrack i{display:block;height:100%;border-radius:4px;transition:width .3s,background-color .3s}.pgtxt{font-size:11.5px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -538,6 +539,7 @@ const IC={
  cal:'M5 6h14v13H5zM5 10h14M9 4v3M15 4v3', clock:'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16zM12 8v4l3 2',
  repeat:'M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4',
  target:'M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16zM12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z',
+  pinmap:'M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11zM12 7.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z',
  trash:'M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13', star:'M12 4l2.5 5 5.5.8-4 3.9.9 5.5L12 16.6 7.1 19.2 8 13.7 4 9.8 9.5 9z',
  x:'M6 6l12 12M18 6L6 18', chev:'M9 6l6 6-6 6', chevD:'M6 9l6 6 6-6', chevL:'M15 6l-6 6 6 6',
  more:'M6 12h.01M12 12h.01M18 12h.01', sliders:'M4 7h10M18 7h2M4 17h4M12 17h8M16 5v4M10 15v4',
@@ -1118,6 +1120,8 @@ function renderSide(){const c=counts();
   </div>`}
 
 /* ================= rendering: tasks ================= */
+const pgPct=t=>t.pages>0?Math.max(0,Math.min(100,Math.round((t.pagesRead||0)*100/t.pages))):0;
+const pgBar=t=>t.pages>0?`<div class="pgwrap" title="${t.pagesRead||0} of ${t.pages} pages"><div class="pgtrack"><i style="width:${pgPct(t)}%;background:hsl(${Math.round(pgPct(t)*1.2)},78%,44%)"></i></div><span class="pgtxt">${t.pagesRead||0}/${t.pages} pages · ${pgPct(t)}%</span></div>`:'';
 function taskRow(t,opts={}){
   const d=dueInfo(t.due,t.time),p=proj(t.project),sd=t.subs.filter(x=>x.done).length;
   const meta=[
@@ -1126,12 +1130,13 @@ function taskRow(t,opts={}){
     t.subs.length?`<span>${ic('sub')}${sd}/${t.subs.length}</span>`:'',
     ...t.labels.map(l=>label(l)).filter(Boolean).map(l=>`<span class="lbl" style="color:${l.color}">${ic('tag')}${esc(l.name)}</span>`),
     t.book&&book(t.book)?`<span>${ic('book')}${esc(book(t.book).name)}</span>`:'',
+    t.location?`<span>${ic('pinmap')}${esc(t.location)}</span>`:'',
     !opts.hideProj&&p?`<span class="tproj">${esc(p.name)}${t.section&&sect(t.section)?' / '+esc(sect(t.section).name):''} <span style="color:${p.color}">#</span></span>`:''
   ].join('');
   const cls=opts.card?'card':'task';
   return`<${opts.card?'div':'li'} class="${cls} ${t.done?'done':''}" data-a="openTask" data-id="${t.id}" ${opts.card?'draggable="true"':''}>
     <button class="chk" style="--pc:${PRI[t.priority]}" data-a="toggle" data-id="${t.id}" aria-label="${t.done?'Mark incomplete':'Complete task'}">${ic('check')}</button>
-    <div class="tbody"><div class="tt">${esc(t.title)}</div>${t.desc?`<div class="td">${esc(t.desc.split('\n')[0])}</div>`:''}${meta?`<div class="tm">${meta}</div>`:''}</div>
+    <div class="tbody"><div class="tt">${esc(t.title)}</div>${t.desc?`<div class="td">${esc(t.desc.split('\n')[0])}</div>`:''}${meta?`<div class="tm">${meta}</div>`:''}${pgBar(t)}</div>
     ${opts.card?'':`<div class="tacts"><button class="ibtn" data-a="openTask" data-id="${t.id}" aria-label="Edit">${ic('edit')}</button><button class="ibtn" data-a="taskDate" data-id="${t.id}" aria-label="Set date">${ic('cal')}</button><button class="ibtn" data-a="taskMenu" data-id="${t.id}" aria-label="More">${ic('more')}</button></div>`}
   </${opts.card?'div':'li'}>`}
 const addRow=(add,txt='Add task')=>`<button class="addrow" data-a="quickAdd" data-add='${esc(JSON.stringify(add||{}))}'><span class="plus">${ic('plus')}</span>${txt}</button>`;
@@ -1284,6 +1289,14 @@ function editBook(id){const b=id?book(id):{name:'',author:'',subject:'',notes:''
     closeModal();commit(id?'Book saved':'Book added',true)};
   if(id)$('bfDel').onclick=e=>{const x=e.currentTarget;if(!x.dataset.sure){x.dataset.sure=1;x.textContent='Tap again to delete';return}
     snap();S.books=S.books.filter(y=>y.id!==id);S.tasks.forEach(t=>{if(t.book===id)t.book=null});closeModal();if(view==='b:'+id)go('books');commit('Book deleted',true)}}
+function numPop(anchor,label,cur,cb){openPop(anchor,(el,close)=>{
+  el.innerHTML=`<div style="padding:8px;display:flex;gap:6px"><input class="inp" id="numIn" type="number" min="0" step="1" inputmode="numeric" placeholder="${esc(label)}" value="${cur||''}" style="width:150px"><button type="button" class="btn pri" id="numOk">Save</button></div>`;
+  const inp=el.querySelector('#numIn');setTimeout(()=>inp.focus(),0);
+  const ok=()=>{cb(Math.max(0,Math.floor(+inp.value)||0));close()};el.querySelector('#numOk').onclick=ok;inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();ok()}})})}
+function locPop(anchor,cur,cb){openPop(anchor,(el,close)=>{
+  el.innerHTML=`<div style="padding:8px;display:flex;gap:6px"><input class="inp" id="locIn" placeholder="Place or address" maxlength="160" value="${esc(cur||'')}" style="min-width:200px" autocomplete="off"><button type="button" class="btn pri" id="locOk">Save</button></div>`;
+  const inp=el.querySelector('#locIn');setTimeout(()=>inp.focus(),0);
+  const ok=()=>{cb(inp.value.trim());close()};el.querySelector('#locOk').onclick=ok;inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.stopPropagation();ok()}})})}
 function bookPop(anchor,cur,cb){openPop(anchor,(el,close)=>{
   const items=[{id:'',name:'No book'},...S.books.map(b=>({id:b.id,name:b.name}))];
   el.innerHTML=`<div class="ll">${items.map(i=>`<button class="pi" data-b="${i.id}">${ic('book')}<span class="lab">${esc(i.name)}</span>${(cur||'')===i.id?'<span class="r">✓</span>':''}</button>`).join('')}</div>`+(S.books.length?'':`<div class="muted" style="padding:8px;font-size:12px">Add books in Manage Book.</div>`);
@@ -1535,7 +1548,7 @@ function closeModal(){closePop();$('modalRoot').innerHTML='';detailId=null}
 /* quick add */
 let QA=null;
 function quickAdd(def={}){
-  QA=Object.assign({project:view.startsWith('p:')&&!isFolder(view.slice(2))?view.slice(2):'inbox',section:null,due:null,time:null,recur:null,deadline:null,priority:4,labels:[]},def);
+  QA=Object.assign({project:view.startsWith('p:')&&!isFolder(view.slice(2))?view.slice(2):'inbox',section:null,due:null,time:null,recur:null,deadline:null,priority:4,labels:[],location:'',rems:[],pages:0},def);
   showModal(`<form id="qaForm"><div class="qa"><input class="t" id="qaT" placeholder="Task name" autocomplete="off">
     <textarea class="d" id="qaD" rows="1" placeholder="Description"></textarea><div class="parsed" id="qaP"></div><div class="chips" id="qaC"></div></div>
     <div class="mf" style="justify-content:space-between"><button type="button" class="cbtn set" id="qaProj"></button><span style="display:flex;gap:8px"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri" id="qaOk" disabled>Add task</button></span></div></form>`);
@@ -1545,7 +1558,8 @@ function quickAdd(def={}){
   $('qaForm').addEventListener('submit',e=>{e.preventDefault();const p=parseTask($('qaT').value);if(!p.title)return;
     const labs=[...new Set([...QA.labels,...p.labels.map(labelId)])];
     snap();const t=addTask({title:p.title,desc:$('qaD').value.trim(),project:p.project||QA.project,section:p.project?(p.section||null):(p.section||QA.section),
-      due:p.due||QA.due,time:p.due?p.time:QA.time,recur:p.recur||QA.recur,deadline:p.deadline||QA.deadline,priority:p.priority||QA.priority,labels:labs,book:QA.book||null});
+      due:p.due||QA.due,time:p.due?p.time:QA.time,recur:p.recur||QA.recur,deadline:p.deadline||QA.deadline,priority:p.priority||QA.priority,labels:labs,book:QA.book||null,location:QA.location||'',pages:QA.pages||0,pagesRead:0,pageLog:[]});
+    (QA.rems||[]).forEach(r=>S.reminders.push({id:uid(),done:false,created:Date.now(),title:t.title,date:r.date,time:r.time||null,repeat:'none',notes:'',task:t.id}));
     if(t.recur&&!t.due)t.due=firstDue(t.recur);
     closeModal();commit(`Task added to ${proj(t.project)?.name||'No subject'}`,true)});
 }
@@ -1554,14 +1568,20 @@ function drawQA(){const d=dueInfo(QA.due,QA.time);
   $('qaC').innerHTML=chip('qaDate',QA.recur?'repeat':'cal',d?d.txt:'Date',!!d,'due',d?`var(--${{late:'p1',today:'green',tom:'orange',week:'purple',later:'fg'}[d.cls]})`:'')
     +chip('qaDl','target',QA.deadline?fmtShort(QA.deadline):'Deadline',!!QA.deadline,'deadline')
     +chip('qaPri','flag',QA.priority<4?'P'+QA.priority:'Priority',QA.priority<4,'priority',QA.priority<4?PRI[QA.priority]:'')
-    +chip('qaLab','tag',QA.labels.length?QA.labels.map(l=>label(l)?.name).join(', '):'Labels',QA.labels.length>0,'labels');
+    +chip('qaLab','tag',QA.labels.length?QA.labels.map(l=>label(l)?.name).join(', '):'Labels',QA.labels.length>0,'labels')
+    +chip('qaRem','bell',QA.rems&&QA.rems.length?(QA.rems.length===1?fmtShort(QA.rems[0].date)+(QA.rems[0].time?' '+fmtTime(QA.rems[0].time):''):QA.rems.length+' reminders'):'Reminders',!!(QA.rems&&QA.rems.length),'rems')
+    +chip('qaPg','book',QA.pages?QA.pages+' pages':'Pages',!!QA.pages,'pages')
+    +chip('qaLoc','pinmap',QA.location||'Location',!!QA.location,'location');
   const p=proj(QA.project);$('qaProj').innerHTML=`${QA.project==='inbox'?ic('inbox'):`<span class="hash" style="color:${p.color}">#</span>`}<span>${esc(p.name)}${QA.section&&sect(QA.section)?' / '+esc(sect(QA.section).name):''}</span>${ic('chevD')}`;
-  $('qaC').onclick=e=>{const x=e.target.closest('[data-clear]');if(x){e.stopPropagation();const k=x.dataset.clear;if(k==='due'){QA.due=QA.time=QA.recur=null}else if(k==='priority')QA.priority=4;else if(k==='labels')QA.labels=[];else QA[k]=null;closePop();drawQA();return}
+  $('qaC').onclick=e=>{const x=e.target.closest('[data-clear]');if(x){e.stopPropagation();const k=x.dataset.clear;if(k==='due'){QA.due=QA.time=QA.recur=null}else if(k==='priority')QA.priority=4;else if(k==='labels')QA.labels=[];else if(k==='rems')QA.rems=[];else if(k==='location')QA.location='';else if(k==='pages')QA.pages=0;else QA[k]=null;closePop();drawQA();return}
     const b=e.target.closest('.cbtn');if(!b)return;
     if(b.id==='qaDate')datePop(b,{due:QA.due,time:QA.time,recur:QA.recur},v=>{Object.assign(QA,v);drawQA()});
     if(b.id==='qaDl')datePop(b,{due:QA.deadline},v=>{QA.deadline=v.due;drawQA()},true);
     if(b.id==='qaPri')priPop(b,QA.priority,p=>{QA.priority=p;drawQA()});
-    if(b.id==='qaLab')labelPop(b,QA.labels,l=>{QA.labels=l;drawQA()})};
+    if(b.id==='qaLab')labelPop(b,QA.labels,l=>{QA.labels=l;drawQA()});
+    if(b.id==='qaRem')datePop(b,{due:QA.due||T(),time:QA.time||null},v=>{if(v.due){QA.rems=QA.rems||[];QA.rems.push({date:v.due,time:v.time||null});drawQA()}});
+    if(b.id==='qaPg')numPop(b,'Total pages',QA.pages,v=>{QA.pages=v;drawQA()});
+    if(b.id==='qaLoc')locPop(b,QA.location,v=>{QA.location=v;drawQA()})};
   $('qaProj').onclick=e=>projPop(e.currentTarget,QA,(p,s)=>{QA.project=p;QA.section=s;drawQA()})}
 
 /* task detail */
@@ -1583,6 +1603,11 @@ function renderDetail(){const t=S.tasks.find(x=>x.id===detailId);if(!t){closeMod
     <div class="sideblk"><div class="l">Book</div><button class="sbtn" id="dtBook">${ic('book')}<span class="lab">${t.book&&book(t.book)?esc(book(t.book).name):'No book'}</span>${ic('chevD')}</button></div>
     <div class="sideblk"><div class="l">Date</div><button class="sbtn" id="dtDate" ${d?`style="color:var(--${{late:'p1',today:'green',tom:'orange',week:'purple',later:'fg'}[d.cls]})"`:''}>${ic(t.recur?'repeat':'cal')}<span class="lab">${d?d.txt:'No date'}</span></button>${t.recur?`<div class="muted" style="font-size:12px;padding-left:28px">${recurText(t.recur)}</div>`:''}</div>
     <div class="sideblk"><div class="l">Deadline</div><button class="sbtn" id="dtDl">${ic('target')}<span class="lab">${t.deadline?fmtShort(t.deadline):'No deadline'}</span></button></div>
+    <div class="sideblk"><div class="l">Pages</div><div style="display:flex;gap:6px;align-items:center;font-size:13px"><input class="inp" id="dtPgR" type="number" min="0" inputmode="numeric" value="${t.pagesRead||0}" style="width:70px" aria-label="Pages read"><span>of</span><input class="inp" id="dtPgT" type="number" min="0" inputmode="numeric" value="${t.pages||0}" style="width:70px" aria-label="Total pages"></div>
+      ${t.pages>0?`<div style="margin:8px 0 4px">${pgBar(t)}</div><div style="display:flex;gap:6px"><input class="inp" id="dtPgN" type="number" min="1" inputmode="numeric" placeholder="Read today" style="flex:1;min-width:0"><button class="btn pri" id="dtPgAdd" type="button">Add</button></div>`:'<div class="muted" style="font-size:12px;margin-top:4px">Set total pages to track reading.</div>'}
+      ${(t.pageLog||[]).length?`<div class="muted" style="font-size:12px;margin-top:6px">${(t.pageLog||[]).slice(-5).reverse().map(l=>fmtShort(l.date)+': +'+l.n).join(' · ')}</div>`:''}</div>
+    <div class="sideblk"><div class="l">Location</div><button class="sbtn" id="dtLoc">${ic('pinmap')}<span class="lab">${t.location?esc(t.location):'No location'}</span></button></div>
+    <div class="sideblk"><div class="l">Reminders <button class="ibtn" id="dtRemAdd" aria-label="Add reminder" style="float:right;margin:-4px 0">${ic('plus')}</button></div>${S.reminders.filter(r=>r.task===t.id).map(r=>`<div class="sbtn" style="cursor:default">${ic('bell')}<span class="lab">${fmtShort(r.date)}${r.time?' · '+fmtTime(r.time):''}</span><button class="ibtn" data-a="remDelDt" data-id="${r.id}" aria-label="Remove reminder">${ic('x')}</button></div>`).join('')||'<div class="muted" style="font-size:13px">None</div>'}</div>
     <div class="sideblk"><div class="l">Priority</div><button class="sbtn" id="dtPri"><span style="color:${PRI[t.priority]};display:grid">${ic('flag')}</span><span class="lab">P${t.priority}</span></button></div>
     <div class="sideblk"><div class="l">Labels <button class="ibtn" id="dtLab" style="width:24px;height:24px" aria-label="Edit labels">${ic('plus')}</button></div><div class="tagrow">${t.labels.map(l=>label(l)).filter(Boolean).map(l=>`<span class="tag"><span style="color:${l.color}">●</span>${esc(l.name)}<button data-a="rmLabel" data-l="${l.id}" aria-label="Remove label">${ic('x')}</button></span>`).join('')||'<span class="muted" style="font-size:13px">None</span>'}</div></div>
   </div></div>`;
@@ -1593,6 +1618,12 @@ function renderDetail(){const t=S.tasks.find(x=>x.id===detailId);if(!t){closeMod
   $('dtD').addEventListener('change',e=>upd({desc:e.target.value}));
   $('dtProj').onclick=e=>projPop(e.currentTarget,t,(pp,s)=>upd({project:pp,section:s}));
   $('dtBook').onclick=e=>bookPop(e.currentTarget,t.book,id=>upd({book:id}));
+  $('dtPgT').addEventListener('change',e=>{const v=Math.max(0,Math.floor(+e.target.value)||0);upd({pages:v,pagesRead:Math.min(t.pagesRead||0,v||0)})});
+  $('dtPgR').addEventListener('change',e=>{const v=Math.max(0,Math.floor(+e.target.value)||0);upd({pagesRead:t.pages?Math.min(v,t.pages):v})});
+  if($('dtPgAdd')){const add=()=>{const n=Math.floor(+$('dtPgN').value)||0;if(n<=0)return;snap();const room=t.pages-(t.pagesRead||0),m=Math.min(n,room);if(m<=0){return}t.pagesRead=(t.pagesRead||0)+m;t.pageLog=t.pageLog||[];t.pageLog.push({date:T(),n:m});commit(`+${m} pages`,true)};
+    $('dtPgAdd').onclick=add;$('dtPgN').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();add()}})}
+  $('dtLoc').onclick=e=>locPop(e.currentTarget,t.location,v=>upd({location:v}));
+  $('dtRemAdd').onclick=e=>datePop(e.currentTarget,{due:t.due||T(),time:t.time||null},v=>{if(!v.due)return;snap();S.reminders.push({id:uid(),done:false,created:Date.now(),title:t.title,date:v.due,time:v.time||null,repeat:'none',notes:'',task:t.id});commit('Reminder added',true)});
   $('dtDate').onclick=e=>datePop(e.currentTarget,{due:t.due,time:t.time,recur:t.recur},v=>upd(v));
   $('dtDl').onclick=e=>datePop(e.currentTarget,{due:t.deadline},v=>upd({deadline:v.due}),true);
   $('dtPri').onclick=e=>priPop(e.currentTarget,t.priority,pp=>upd({priority:pp}));
@@ -1769,6 +1800,7 @@ document.addEventListener('click',e=>{
   case'secTog':S.ui[b.dataset.k]=!S.ui[b.dataset.k];save();render();break;
   case'toggleSide':if(innerWidth<=860)$('app').classList.toggle('drawer');else $('app').classList.toggle('collapsed');break;
   case'install':stop();window.tfInstall&&window.tfInstall();break;
+  case'remDelDt':{stop();snap();S.reminders=S.reminders.filter(r=>r.id!==id);commit('Reminder removed',true);break}
   case'closeDrawer':$('app').classList.remove('drawer');break;
   case'quickAdd':stop();let add={};try{add=JSON.parse(b.dataset.add||'{}')}catch(_){}quickAdd(add);break;
   case'toggle':stop();toggleTask(id);break;
