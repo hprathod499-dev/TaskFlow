@@ -495,6 +495,10 @@ button:active{transform:scale(.97)}
 .nkc.out{opacity:.4}.nkc.sel{border-color:var(--strong)}
 .pgwrap{margin-top:6px;display:flex;flex-direction:column;gap:3px;width:100%}.pgtrack{height:6px;border-radius:4px;background:#f2d36b66;overflow:hidden}.pgtrack i{display:block;height:100%;border-radius:4px;transition:width .3s,background-color .3s}.pgtxt{font-size:11.5px;color:var(--muted)}
 .chaps2{list-style:none;margin:0;padding:0}.chrow{padding:8px 0;border-bottom:1px solid var(--line)}.chrow:last-child{border-bottom:0}.chtop{display:flex;align-items:center;gap:8px}.chn{flex:1;min-width:0;font-weight:600}.chpg{display:flex;align-items:center;gap:4px;color:var(--muted)}.chp{width:64px;text-align:right}.chrow .cin{background:none;border:0;padding:6px 4px;border-radius:6px;font:inherit;color:inherit}.chrow .cin:focus{background:var(--raise);outline:0}.chrow .pgwrap{margin-top:2px}
+.chfold{margin:8px 0}.chfh{display:flex;align-items:center;gap:6px}.chfn{flex:1;min-width:0;font-weight:700}.chg{max-width:130px;font-size:12px}.chfold .chaps2{margin-left:28px}
+.tocrow{display:grid;grid-template-columns:22px 34px 1fr 70px 60px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}.tocrow input.inp{padding:5px 6px}.tocrow .n{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}.tocrow.warn{background:var(--accent-soft)}
+@media(max-width:560px){.tocrow{grid-template-columns:22px 28px 1fr 56px 44px}}
+.chfh .cin,.chg{background:none;border:0;padding:6px 4px;border-radius:6px;font:inherit;color:inherit}.chfh .cin:focus{background:var(--raise);outline:0}.chg{font-size:12px;color:var(--muted)}.chfold>.pgwrap{width:auto}
 </style>
 </head>
 <body>
@@ -656,7 +660,7 @@ const uid=()=>Math.random().toString(36).slice(2,10);
 const PRI={1:'var(--p1)',2:'var(--p2)',3:'var(--p3)',4:'var(--p4)'};
 
 function sampleData(){
-  return{v:2,user:{name:''},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],books:[],reminders:[],exams:[],chapters:[],
+  return{v:2,user:{name:''},settings:{theme:'system',weekStart:1},projects:[],sections:[],labels:[],filters:[],tasks:[],log:[],books:[],reminders:[],exams:[],chapters:[],pending:[],
     display:{},recent:['today'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}}}
 function demoData(){
   const P=(id,name,color,parent=null,fav=false)=>({id,name,color,parent,fav,archived:false,order:0});
@@ -684,12 +688,12 @@ function demoData(){
     t('Note down doubts for mentor call',{project:'inbox'}),
   ];
   tasks.forEach((x,i)=>x.order=i);
-  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],books:[],reminders:[],exams:[],chapters:[],
+  return{v:2,user:{name:'Pankaj'},settings:{theme:'system',weekStart:1},projects,sections,labels,filters,tasks,log:[],books:[],reminders:[],exams:[],chapters:[],pending:[],
     display:{},recent:['upcoming','today','p:matrix','p:isec','p:society','p:geography'],ui:{col:{},favOpen:true,projOpen:true,upStart:null,calMonth:null}};
 }
 let S;try{S=JSON.parse(localStorage.getItem(KEY))}catch(e){}
 if(!S||S.v!==2)S=sampleData();
-function ensure(x){['books','reminders','exams','chapters'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
+function ensure(x){['books','reminders','exams','chapters','pending'].forEach(k=>{if(!Array.isArray(x[k]))x[k]=[]});return x}
 ensure(S);
 /* ================= cloud sync (Firebase Realtime Database) ================= */
 const FB_CFG={
@@ -724,7 +728,7 @@ function mergeData(local,remote){
   const lt=(local.tasks||[]).filter(t=>!t.sample);
   const out=remote;
   out.tasks=byId(remote.tasks,lt);
-  ['projects','sections','labels','filters','books','reminders','exams','chapters'].forEach(k=>out[k]=byId(remote[k],local[k]));
+  ['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>out[k]=byId(remote[k],local[k]));
   out.log=byId(remote.log,local.log);
   if(local.arch&&(!remote.arch||(local.arch.last||0)>(remote.arch.last||0)))out.arch=local.arch;
   out.ui=local.ui;out.display=local.display;out.recent=local.recent;out.settings=local.settings;return out}
@@ -912,7 +916,7 @@ async function driveRestore(id){
   snap();
   let added=0;
   const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
-  ensure(S);['projects','sections','labels','filters','books','reminders','exams','chapters'].forEach(k=>addMissing(k,lv[k]));
+  ensure(S);['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>addMissing(k,lv[k]));
   addMissing('tasks',(lv.tasks||[]).filter(t=>!oldDone(t,c)&&!t.sample));
   addMissing('log',(lv.log||[]).filter(e=>e.at>=c));
   S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();
@@ -1024,17 +1028,17 @@ const hashOf=v=>v.replace(':','-');
 const viewOf=h=>{h=h.replace(/^#/,'');if(!h)return'today';const m=h.match(/^([plfb])-(.+)$/);return m?m[1]+':'+m[2]:h};
 function go(v){if(location.hash.slice(1)!==hashOf(v))location.hash=hashOf(v);else{view=v;render()}$('app').classList.remove('drawer')}
 window.addEventListener('hashchange',()=>{view=viewOf(location.hash);if(!validView(view))view='today';track(view);render();$('content').scrollTop=0});
-function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books'].includes(v)}
+function validView(v){const[k,id]=v.split(':');if(k==='b')return!!book(id);if(k==='p')return!!proj(id);if(k==='l')return!!label(id);if(k==='f')return!!filt(id);return['inbox','today','upcoming','search','filters','completed','projects','calendar','reminders','exams','books','pending'].includes(v)}
 function track(v){if(v==='search')return;S.recent=[v,...S.recent.filter(x=>x!==v)].slice(0,8);save()}
 function viewName(v){const[k,id]=v.split(':');
   if(k==='b')return book(id)?.name;if(k==='p')return id==='inbox'?'No subject':proj(id)?.name;if(k==='l')return label(id)?.name;if(k==='f')return filt(id)?.name;
-  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book'}[v]}
+  return{inbox:'No subject',today:"Today's task",upcoming:'Upcoming',search:'Search',filters:'Filters & Labels',completed:'Completed',projects:'My Subjects',calendar:'Task calendar',reminders:'Event & Reminder',exams:'Exam plan',books:'Manage Book',pending:'Pending'}[v]}
 function viewIcon(v){const[k,id]=v.split(':');
   if(k==='b')return`<span class="emo">📖</span>`;
   if(k==='p')return isFolder(id)?`<span class="emo">📁</span>`:`<span class="hash" style="color:${proj(id)?.color}">#</span>`;
   if(k==='l')return`<span style="color:${label(id)?.color};display:grid">${ic('tag')}</span>`;
   if(k==='f')return`<span style="color:${filt(id)?.color};display:grid">${ic('filters')}</span>`;
-  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚'}[v]||'📄'}</span>`}
+  return`<span class="emo">${{inbox:'📥',today:'🏠',upcoming:'🗓️',search:'🔍',filters:'🏷️',completed:'✅',projects:'📂',calendar:'📅',reminders:'🔔',exams:'🎯',books:'📚',pending:'⏳'}[v]||'📄'}</span>`}
 
 /* ================= display settings ================= */
 function disp(v){const k=v.startsWith('p:')?'p':v;return Object.assign({layout:'list',showDone:false,group:'default',sort:'manual',dir:'asc',fpri:'all',flabel:'all'},S.display[v]||{})}
@@ -1108,7 +1112,7 @@ function renderSide(){const c=counts();
   <div class="side-scroll">
     <button class="add-task-side" data-a="quickAdd"><span class="ico">📝</span>Add task</button>
     ${navItem('today',"Today's task",c.today||'')}${navItem('calendar','Task calendar')}
-    ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}
+    ${navItem('upcoming','Upcoming')}${navItem('filters','Filters & Labels')}${navItem('completed','Completed')}${navItem('pending','Pending',S.pending.length||'')}
     <div class="navhr"></div>${navItem('reminders','Event & Reminder',c.rem||'')}${navItem('exams','Exam plan')}${navItem('books','Manage Book')}
     ${favs?`<div class="sec-h"><span data-a="secTog" data-k="favOpen">Favorites</span><span class="acts"><button class="ibtn" data-a="secTog" data-k="favOpen" aria-label="Toggle">${ic(S.ui.favOpen?'chevD':'chev')}</button></span></div>${S.ui.favOpen?favs:''}`:''}
     <div class="sec-h"><span data-a="go" data-v="projects">My Subjects</span><span class="acts"><button class="ibtn" data-a="editProject" aria-label="Add subject">${ic('plus')}</button><button class="ibtn" data-a="secTog" data-k="projOpen" aria-label="Toggle">${ic(S.ui.projOpen?'chevD':'chev')}</button></span></div>
@@ -1264,26 +1268,115 @@ const chap=id=>S.chapters.find(c=>c.id===id);
 const projChaps=pid=>S.chapters.filter(c=>c.project===pid).sort((a,b)=>a.order-b.order);
 function chapRead(c){return S.tasks.filter(t=>t.chapter===c.id).reduce((n,t)=>n+pgRead(t),0)}
 const barColor=pct=>`hsl(${Math.round(pct*1.2)},78%,44%)`;
-function chapCardHTML(pid){const L=projChaps(pid);
-  const rows=L.map(c=>{const r=Math.min(c.pages||0,chapRead(c)),pc=c.pages>0?Math.round(r*100/c.pages):0,nt=S.tasks.filter(t=>t.chapter===c.id),nd=nt.filter(t=>t.done).length;
-    return`<li class="chrow" data-chid="${c.id}"><div class="chtop"><input class="cin chn" data-chn="${c.id}" value="${esc(c.name)}" maxlength="160" aria-label="Chapter name"><span class="chpg"><input class="cin chp" type="number" min="0" inputmode="numeric" data-chp="${c.id}" value="${c.pages||0}" aria-label="Total pages"><small>pages</small></span><button class="ibtn" data-a="chDel" data-id="${c.id}" aria-label="Delete chapter">${ic('x')}</button></div>
-      ${c.pages>0?`<div class="pgwrap"><div class="pgtrack"><i style="width:${pc}%;background:${barColor(pc)}"></i></div><span class="pgtxt">${r}/${c.pages} pages · ${pc}%${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span></div>`:`<span class="pgtxt">Set total pages to see progress${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span>`}</li>`}).join('');
-  return`<div class="nkcard" style="margin:10px 0 16px"><div class="nkh"><span class="mon" style="font-size:16px">📑 Chapters</span><span class="muted">${L.length?L.length+' chapter'+(L.length>1?'s':''):'none yet'}</span></div>
-    ${rows?`<ul class="tl chaps2">${rows}</ul>`:''}
-    <div class="chapadd" style="margin-top:8px"><input class="inp" data-chnew="${pid}" placeholder="Chapter name" maxlength="160" autocomplete="off"><input class="inp" type="number" min="0" inputmode="numeric" data-chnewp="${pid}" placeholder="Pages" style="flex:none;width:90px"><button class="btn pri" data-a="chAdd" data-id="${pid}">Add</button></div>
+const chFolders=pid=>{const p=proj(pid),n=[...((p&&p.chFolders)||[])];S.chapters.forEach(c=>{if(c.project===pid&&c.group&&!n.includes(c.group))n.push(c.group)});return n};
+const chStat=L=>{let r=0,t=0;L.forEach(c=>{t+=c.pages||0;r+=Math.min(c.pages||0,chapRead(c))});return{r,t,pc:t>0?Math.round(r*100/t):0}};
+function chRowHTML(c,folders){const r=Math.min(c.pages||0,chapRead(c)),pc=c.pages>0?Math.round(r*100/c.pages):0,nt=S.tasks.filter(t=>t.chapter===c.id),nd=nt.filter(t=>t.done).length;
+  return`<li class="chrow" data-chid="${c.id}"><div class="chtop"><input class="cin chn" data-chn="${c.id}" value="${esc(c.name)}" maxlength="160" aria-label="Chapter name">${folders.length?`<select class="cin chg" data-chg="${c.id}" aria-label="Folder"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}" ${c.group===f?'selected':''}>${esc(f)}</option>`).join('')}</select>`:''}<span class="chpg"><input class="cin chp" type="number" min="0" inputmode="numeric" data-chp="${c.id}" value="${c.pages||0}" aria-label="Total pages"><small>pages</small></span><button class="ibtn" data-a="chDel" data-id="${c.id}" aria-label="Delete chapter">${ic('x')}</button></div>
+    ${c.pages>0?`<div class="pgwrap"><div class="pgtrack"><i style="width:${pc}%;background:${barColor(pc)}"></i></div><span class="pgtxt">${r}/${c.pages} pages · ${pc}%${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span></div>`:`<span class="pgtxt">Set total pages to see progress${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span>`}</li>`}
+function chapCardHTML(pid){const all=projChaps(pid),folders=chFolders(pid);
+  const rows=L=>L.length?`<ul class="tl chaps2">${L.map(c=>chRowHTML(c,folders)).join('')}</ul>`:'';
+  const secs=folders.map(f=>{const L=all.filter(c=>c.group===f),st=chStat(L),key=pid+'|'+f,col=(S.ui.chCol||{})[key];
+    return`<div class="chfold"><div class="chfh"><button class="ibtn" data-a="chFoldTog" data-k="${esc(key)}" aria-label="Expand or collapse">${ic(col?'chev':'chevD')}</button><span class="emo">📁</span><input class="cin chfn" data-fname="${esc(f)}" value="${esc(f)}" maxlength="80" aria-label="Folder name"><span class="muted" style="font-size:12px">${L.length} ch${st.t?` · ${st.pc}%`:''}</span><button class="ibtn" data-a="chFoldDel" data-k="${esc(f)}" data-id="${pid}" aria-label="Delete folder">${ic('x')}</button></div>
+      ${st.t?`<div class="pgwrap" style="margin:2px 0 4px 34px"><div class="pgtrack"><i style="width:${st.pc}%;background:${barColor(st.pc)}"></i></div><span class="pgtxt">${st.r}/${st.t} pages · ${st.pc}%</span></div>`:''}${col?'':rows(L)}</div>`}).join('');
+  const loose=all.filter(c=>!c.group||!folders.includes(c.group));
+  return`<div class="nkcard" style="margin:10px 0 16px"><div class="nkh"><span class="mon" style="font-size:16px">📑 Chapters</span><span class="muted">${all.length?all.length+' chapter'+(all.length>1?'s':''):'none yet'}</span>
+    <button class="pill" data-a="chFoldAdd" data-id="${pid}">📁 Add folder</button><button class="pill" data-a="chImport" data-id="${pid}">📄 Import contents</button></div>
+    ${secs}${loose.length?(folders.length?`<div class="chfh" style="margin-top:6px"><span class="muted" style="font-size:12px">No folder</span></div>`:'')+rows(loose):''}
+    <div class="chapadd" style="margin-top:8px"><input class="inp" data-chnew="${pid}" placeholder="Chapter name" maxlength="160" autocomplete="off"><input class="inp" type="number" min="0" inputmode="numeric" data-chnewp="${pid}" placeholder="Pages" style="flex:none;width:90px">${folders.length?`<select class="inp" data-chnewg="${pid}" style="flex:none;width:auto;max-width:150px"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select>`:''}<button class="btn pri" data-a="chAdd" data-id="${pid}">Add</button></div>
     <p class="muted" style="margin:8px 0 0;font-size:12px">Add a task to this subject, pick this chapter and its pages. When you read pages or finish the task, the chapter line updates by itself.</p></div>`}
-function addChapter(pid){const n=document.querySelector(`[data-chnew="${pid}"]`),pg=document.querySelector(`[data-chnewp="${pid}"]`);if(!n||!proj(pid))return;
+function addChapter(pid){const n=document.querySelector(`[data-chnew="${pid}"]`),pg=document.querySelector(`[data-chnewp="${pid}"]`),gs=document.querySelector(`[data-chnewg="${pid}"]`);if(!n||!proj(pid))return;
   const names=n.value.split(/\r?\n/).map(x=>x.replace(/^\s*(\d+[.)]|[-*•])\s+/,'').trim()).filter(Boolean);if(!names.length){n.focus();return}
-  snap();const pages=names.length===1?Math.max(0,Math.floor(+pg.value)||0):0;names.forEach(nm=>S.chapters.push({id:uid(),project:pid,name:nm.slice(0,160),pages,order:S.chapters.length,created:Date.now()}));
+  snap();const pages=names.length===1?Math.max(0,Math.floor(+pg.value)||0):0,group=gs?gs.value:'';names.forEach(nm=>S.chapters.push({id:uid(),project:pid,name:nm.slice(0,160),pages,group,order:S.chapters.length,created:Date.now()}));
   commit(names.length+' chapter'+(names.length>1?'s':'')+' added',true);setTimeout(()=>{const i=document.querySelector(`[data-chnew="${pid}"]`);if(i)i.focus()},0)}
-document.addEventListener('keydown',e=>{const t=e.target;if(!t.dataset)return;if((t.dataset.chnew||t.dataset.chnewp)&&e.key==='Enter'){e.preventDefault();addChapter(t.dataset.chnew||t.dataset.chnewp)}else if((t.dataset.chn||t.dataset.chp)&&e.key==='Enter')t.blur()});
+function addChFolder(pid){showModal(`<form id="cff"><div class="mh"><b>New folder</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><div class="fld"><label for="cfN">Folder name</label><input class="inp" id="cfN" maxlength="80" placeholder="For example, Ancient India" autocomplete="off"></div></div><div class="mf"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">Add</button></div></form>`);
+  setTimeout(()=>$('cfN').focus(),0);$('cff').onsubmit=e=>{e.preventDefault();const v=$('cfN').value.trim();if(!v)return;const p=proj(pid);if(!p)return;if(chFolders(pid).includes(v)){toast('Folder already exists');return}snap();p.chFolders=[...(p.chFolders||[]),v];closeModal();commit('Folder added',true)}}
+document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;
+  if(t.dataset.chg!==undefined&&t.dataset.chg){const c=chap(t.dataset.chg);if(c){snap();c.group=t.value;commit()}}
+  else if(t.dataset.fname!==undefined){const old=t.dataset.fname,v=t.value.trim(),pid=view.slice(2),p=proj(pid);if(!p)return;if(!v||(v!==old&&chFolders(pid).includes(v))){t.value=old;return}
+    if(v!==old){snap();p.chFolders=(p.chFolders||[]).map(x=>x===old?v:x);S.chapters.forEach(c=>{if(c.project===pid&&c.group===old)c.group=v});commit()}}});
+document.addEventListener('keydown',e=>{const t=e.target;if(!t.dataset)return;if((t.dataset.chnew||t.dataset.chnewp)&&e.key==='Enter'){e.preventDefault();addChapter(t.dataset.chnew||t.dataset.chnewp)}else if((t.dataset.chn||t.dataset.chp||t.dataset.fname!==undefined)&&e.key==='Enter')t.blur()});
 document.addEventListener('paste',e=>{const t=e.target;if(!(t.dataset&&t.dataset.chnew))return;const x=(e.clipboardData||window.clipboardData).getData('text');if(/\n/.test(x.trim())){e.preventDefault();t.value=x;addChapter(t.dataset.chnew)}});
 document.addEventListener('change',e=>{const t=e.target;if(!t.dataset)return;
   if(t.dataset.chn){const c=chap(t.dataset.chn),v=t.value.trim();if(c&&v&&v!==c.name){snap();c.name=v;commit()}else if(c)t.value=c.name}
   else if(t.dataset.chp){const c=chap(t.dataset.chp);if(c){snap();c.pages=Math.max(0,Math.floor(+t.value)||0);commit()}}});
+/* ---- import contents page (PDF or photos) -> chapters; reads text in the browser ---- */
+const PDFJS='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',PDFJS_W='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',TESS='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+window.TOC_LIBS=window.TOC_LIBS||{pdf:PDFJS,pdfw:PDFJS_W,tess:TESS,tessOpts:{}};
+const loadScript=src=>new Promise((res,rej)=>{if(document.querySelector(`script[src="${src}"]`))return res();const x=document.createElement('script');x.src=src;x.onload=res;x.onerror=()=>rej(new Error('Could not load the reading tool. Check your internet and try again.'));document.head.appendChild(x)});
+function parseTocPage(data,W){
+  let lines=data.lines;if(!lines&&data.blocks)lines=data.blocks.flatMap(b=>(b.paragraphs||[]).flatMap(p=>p.lines||[]));lines=lines||[];
+  const words=data.words||lines.flatMap(l=>l.words||[]);
+  const nums=words.filter(w=>/^\d{1,4}$/.test((w.text||'').trim())&&w.bbox.x0>W*.6).map(w=>({n:+w.text.trim(),y:(w.bbox.y0+w.bbox.y1)/2,x0:w.bbox.x0}));
+  const used=new Set(),out=[],ends=[];
+  lines=lines.map(l=>({t:(l.text||'').replace(/\s+/g,' ').trim(),b:l.bbox})).filter(l=>l.t);
+  lines.forEach((l,i)=>{
+    const em=/^(chronology of literary sources|bibliography|index)\b/i.exec(l.t);
+    if(em){let pg=null;const m=/(\d{1,4})$/.exec(l.t);if(m&&l.t.length>m[0].length+4)pg=+m[1];else{const h=(l.b.y1-l.b.y0);const c=nums.filter(x=>!used.has(x)&&Math.abs(x.y-(l.b.y0+l.b.y1)/2)<h*1.6).sort((a,b)=>Math.abs(a.y-(l.b.y0+l.b.y1)/2)-Math.abs(b.y-(l.b.y0+l.b.y1)/2))[0];if(c){pg=c.n;used.add(c)}}if(pg)ends.push(pg);return}
+    const m=/^(\d{1,3})\s*[.,)]\s*(.+)$/.exec(l.t);if(!m)return;let title=m[2],pg=null;
+    const tm=/^(.*\S)\s+(\d{1,4})$/.exec(title);if(tm&&tm[1].length>6){title=tm[1];pg=+tm[2]}
+    const h=l.b.y1-l.b.y0,mid=(l.b.y0+l.b.y1)/2;
+    if(pg===null){const c=nums.filter(x=>!used.has(x)&&Math.abs(x.y-mid)<h*1.5&&x.x0>=l.b.x1-5).sort((a,b)=>Math.abs(a.y-mid)-Math.abs(b.y-mid))[0];if(c){pg=c.n;used.add(c)}}
+    const nx=lines[i+1];if(nx&&!/;/.test(nx.t)&&nx.t.length<70&&!/^\d{1,3}\s*[.,)]/.test(nx.t)&&!/^chronology$/i.test(nx.t)&&!/^contents$/i.test(nx.t)&&Math.abs(nx.b.x0-l.b.x0)<W*.12&&nx.b.y0-l.b.y1<h*1.3&&/^[A-Za-z(]/.test(nx.t)&&!/^[a-z]/.test(nx.t))title+=' '+nx.t.replace(/\s+\d{1,4}$/,'');
+    out.push({n:+m[1],name:title.replace(/\s+/g,' ').trim(),start:pg})});
+  return{items:out,ends}}
+const tocClean=t=>{let x=t.replace(/\s+/g,' ').trim();for(let i=0;i<3;i++)x=x.replace(/\s+(\d{1,4}|[^\w)\]]{1,3}|[a-z]\d)\s*$/i,'').replace(/^[^\w(]+/,'').trim();return x};
+const tocSus=t=>{const w=t.split(' ');const letters=(t.match(/[A-Za-z]/g)||[]).length;return letters<t.length*.7||w.filter(x=>x.length<=1).length>1||t.length<5||/^c ents$/i.test(t)};
+function tocFinish(parsed){const seen=new Map();let end=null,last=0;const ends=[];
+  parsed.forEach(r=>{(r.ends||[]).forEach(x=>ends.push(x));r.items.forEach(it=>{const ok=last===0?it.n<=3:(it.n>last&&it.n<=last+3);if(!ok)return;last=it.n;const o=seen.get(it.n);if(!o||(o.start==null&&it.start!=null))seen.set(it.n,it)})});
+  const ns=[...seen.keys()].sort((a,b)=>a-b),rows=[];if(!ns.length)return{rows,end};
+  for(let n=ns[0];n<=ns[ns.length-1];n++){const it=seen.get(n);if(it){const nm=tocClean(it.name);rows.push({n,name:nm,start:it.start,inc:true,miss:tocSus(nm)})}else rows.push({n,name:'Chapter '+n+' (not read, please fill in)',start:null,inc:true,miss:true})}
+  /* start pages must keep rising: keep the longest rising run, blank the rest so they are flagged */
+  const idx=rows.map((r,i)=>r.start!=null?i:-1).filter(i=>i>=0),L=idx.map(()=>1),P=idx.map(()=>-1);
+  for(let i=0;i<idx.length;i++)for(let j=0;j<i;j++)if(rows[idx[j]].start<rows[idx[i]].start&&L[j]+1>L[i]){L[i]=L[j]+1;P[i]=j}
+  let best=0;L.forEach((v,i)=>{if(v>L[best])best=i});const keep=new Set();if(idx.length){let k=best;while(k>=0){keep.add(idx[k]);k=P[k]}}
+  idx.forEach(i=>{if(!keep.has(i)){rows[i].start=null;rows[i].miss=true}});
+  const lastStart=Math.max(0,...rows.map(r=>r.start||0));const cand=ends.filter(x=>x>lastStart).sort((a,b)=>a-b);end=cand.length?cand[0]:null;
+  return{rows,end}}
+async function tocRead(files,onProgress){const out=[];await loadScript(window.TOC_LIBS.tess);
+  const imgs=[];for(const f of files){if(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name)){await loadScript(window.TOC_LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=window.TOC_LIBS.pdfw;const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=doc.numPages;i++)imgs.push({kind:'pdf',doc,i,label:f.name+' p'+i})}else imgs.push({kind:'img',f,label:f.name})}
+  const worker=await Tesseract.createWorker('eng',1,window.TOC_LIBS.tessOpts);
+  try{for(let k=0;k<imgs.length;k++){onProgress(k,imgs.length);const it=imgs[k];let cv;
+    if(it.kind==='pdf'){const pg=await it.doc.getPage(it.i),vp0=pg.getViewport({scale:1}),sc=Math.min(5,3000/Math.max(vp0.width,vp0.height)),vp=pg.getViewport({scale:sc});cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}
+    else{const bm=await createImageBitmap(it.f),sc=Math.min(1,3000/Math.max(bm.width,bm.height));cv=document.createElement('canvas');cv.width=Math.round(bm.width*sc);cv.height=Math.round(bm.height*sc);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height)}
+    const{data}=await worker.recognize(cv);out.push(Object.assign(parseTocPage(data,cv.width),{}));cv.width=cv.height=0}}
+  finally{await worker.terminate()}
+  onProgress(imgs.length,imgs.length);return out}
+function tocImport(pid){const p=proj(pid);if(!p)return;
+  const inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,image/*';inp.multiple=true;inp.style.display='none';document.body.appendChild(inp);
+  inp.onchange=async()=>{const files=[...inp.files];inp.remove();if(!files.length)return;
+    showModal(`<div class="mh"><b>Reading contents…</b></div><div class="mb"><p id="tocMsg" style="margin:0 0 8px">Starting…</p><div class="pgtrack"><i id="tocBar" style="display:block;height:100%;width:3%;background:var(--strong)"></i></div><p class="muted" style="font-size:12px;margin:8px 0 0">The first time takes a minute (a reading tool is downloaded). Everything is read on your device.</p></div>`);
+    let parsed;try{parsed=await tocRead(files,(k,n)=>{const m=$('tocMsg');if(m){m.textContent=k>=n?'Done':`Reading page ${k+1} of ${n}…`;$('tocBar').style.width=Math.max(3,Math.round(k*100/Math.max(1,n)))+'%'}})}
+    catch(err){showModal(`<div class="mh"><b>Could not read the file</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><p style="margin:0">${esc(err.message||String(err))}</p></div><div class="mf"><button class="btn pri" data-a="closeModal">OK</button></div>`);return}
+    tocReview(pid,tocFinish(parsed))};
+  inp.click()}
+function tocReview(pid,res){const rows=res.rows,folders=chFolders(pid);
+  if(!rows.length){showModal(`<div class="mh"><b>No chapters found</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><p style="margin:0">I could not find numbered chapters (like “1. Title”). Try a clearer, straight photo of the contents page, or add chapters by hand.</p></div><div class="mf"><button class="btn pri" data-a="closeModal">OK</button></div>`);return}
+  let end=res.end||'';
+  const calcP=()=>rows.map((r,i)=>{let nx=null;for(let j=i+1;j<rows.length;j++){if(rows[j].start!=null){nx=rows[j].start;break}}if(nx==null&&end)nx=+end;return r.start!=null&&nx!=null&&nx>r.start?nx-r.start:0});
+  const draw=()=>{const calc=calcP();
+    return rows.map((r,i)=>`<div class="tocrow ${r.miss||r.start==null?'warn':''}"><input type="checkbox" data-ti="${i}" data-tf="inc" ${r.inc?'checked':''} aria-label="Include"><span class="n">${r.n}</span><input class="inp" data-ti="${i}" data-tf="name" value="${esc(r.name)}" maxlength="160"><input class="inp" type="number" min="0" data-ti="${i}" data-tf="start" value="${r.start==null?'':r.start}" placeholder="start"><span class="n" id="tpg${i}">${calc[i]||'?'}</span></div>`).join('')};
+  showModal(`<form id="tocF"><div class="mh"><b>Check chapters</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb" style="max-height:60vh;overflow:auto">
+    <p class="muted" style="margin:0 0 8px;font-size:12.5px">${rows.length} chapters found. Fix any name or <b>start page</b>. Pages of a chapter = next chapter's start − its start. Highlighted rows need a start page.</p>
+    <div class="tocrow" style="font-size:11px;color:var(--muted)"><span></span><span class="n">No.</span><span>Chapter</span><span>Start pg</span><span class="n">Pages</span></div><div id="tocBody">${draw()}</div>
+    <div class="fld" style="margin-top:10px"><label for="tocEnd">Book's last page (or page where the next section starts)</label><input class="inp" id="tocEnd" type="number" min="0" value="${end}" placeholder="for example 320"></div>
+    ${folders.length?`<div class="fld"><label for="tocG">Put chapters in folder</label><select class="inp" id="tocG"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select></div>`:''}</div>
+    <div class="mf"><button type="button" class="btn sec" data-a="closeModal">Cancel</button><button class="btn pri">Add chapters</button></div></form>`);
+  const refresh=()=>{$('tocBody').innerHTML=draw()};
+  $('tocF').addEventListener('change',e=>{const t=e.target,i=t.dataset.ti;if(i===undefined&&t.id!=='tocEnd')return;
+    if(t.id==='tocEnd'){end=t.value;refresh();return}
+    const r=rows[+i];if(t.dataset.tf==='inc')r.inc=t.checked;else if(t.dataset.tf==='name')r.name=t.value;else if(t.dataset.tf==='start'){r.start=t.value===''?null:Math.max(0,Math.floor(+t.value)||0);r.miss=false;refresh()}});
+  $('tocF').onsubmit=e=>{e.preventDefault();const calc=calcP(),g=$('tocG')?$('tocG').value:'';snap();let n=0;
+    rows.forEach((r,i)=>{if(!r.inc)return;S.chapters.push({id:uid(),project:pid,name:(r.n+'. '+r.name.replace(/\s*\(not read.*\)$/,'')).slice(0,160),pages:calc[i]||0,group:g,order:S.chapters.length,created:Date.now()});n++});
+    closeModal();commit(n+' chapters added',true)}}
 function chapPop(anchor,pid,cur,cb){openPop(anchor,(el,close)=>{const L=projChaps(pid);
   el.innerHTML=`<div class="ll"><button class="pi" data-c="">${ic('x')}<span class="lab">No chapter</span>${!cur?'<span class="r">✓</span>':''}</button>${L.map(c=>`<button class="pi" data-c="${c.id}">${ic('book')}<span class="lab">${esc(c.name)}</span>${cur===c.id?'<span class="r">✓</span>':''}</button>`).join('')}</div>${L.length?'':'<div class="muted" style="padding:8px;font-size:12px">Add chapters on the subject page first.</div>'}`;
   el.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;cb(b.dataset.c||null);close()})})}
+/* ================= pending (deleted, unfinished tasks) ================= */
+function pendingHTML(){const L=S.pending.slice().sort((a,b)=>(b.deletedAt||0)-(a.deletedAt||0));
+  if(!L.length)return empty('today','Nothing pending','When you delete a task that is not finished, it comes here so you can start it again.','');
+  return`<p class="muted" style="margin:6px 0 12px;font-size:13px">Tasks you deleted before finishing. Restart one to put it back on today's list.</p><ul class="tl">${L.map(t=>{const p=proj(t.project),d=new Date(t.deletedAt||Date.now());
+    return`<li class="task"><span class="chk" style="--pc:${PRI[t.priority]||'var(--p4)'};opacity:.6"></span><div class="tbody"><div class="tt">${esc(t.title)}</div><div class="tm"><span>${ic('trash')}Deleted ${d.getDate()} ${MON[d.getMonth()]}</span>${t.due?`<span>${ic('cal')}Was due ${fmtShort(t.due)}</span>`:''}${t.chapter&&chap(t.chapter)?`<span>${ic('book')}${esc(chap(t.chapter).name)}</span>`:''}${p?`<span class="tproj">${esc(p.name)} <span style="color:${p.color}">#</span></span>`:''}</div>${pgBar(t)}</div>
+      <span style="display:flex;gap:6px;align-items:center;flex:none"><button class="btn pri" data-a="penRestart" data-id="${t.id}">Restart</button><button class="ibtn" data-a="penDel" data-id="${t.id}" aria-label="Remove forever">${ic('x')}</button></span></li>`}).join('')}</ul>`}
 /* ================= books ================= */
 function booksHTML(){
   const rows=S.books.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(b=>{const ts=S.tasks.filter(t=>t.book===b.id),dn=ts.filter(t=>t.done).length,sj=b.subject&&proj(b.subject)?proj(b.subject).name:'';
@@ -1475,6 +1568,7 @@ function render(){
   else if(v==='reminders')body=remindersHTML();
   else if(v==='exams')body=examsHTML();
   else if(v==='books')body=booksHTML();
+  else if(v==='pending')body=pendingHTML();
   else if(v==='search')body=searchHTML();
   else if(v==='filters')body=filtersHTML();
   else if(v==='projects')body=projectsHTML();
@@ -1500,7 +1594,7 @@ function toggleTask(id){const t=S.tasks.find(x=>x.id===id);if(!t)return;snap();
   else{const i=S.log.map(e=>e.taskId).lastIndexOf(t.id);if(i>=0)S.log.splice(i,1)}
   pulse(id);setTimeout(()=>commit(t.done?'1 task completed':'Task reopened',true),t.done?220:0)}
 function pulse(id){document.querySelectorAll(`[data-id="${id}"].task,[data-id="${id}"].card`).forEach(el=>el.classList.add('popping','done'))}
-function deleteTask(id){snap();S.tasks=S.tasks.filter(t=>t.id!==id);if(detailId===id)closeModal();commit('Task deleted',true)}
+function deleteTask(id){snap();const dt=S.tasks.find(t=>t.id===id);if(dt&&!dt.done&&!dt.sample)S.pending.push(Object.assign(JSON.parse(JSON.stringify(dt)),{deletedAt:Date.now()}));S.tasks=S.tasks.filter(t=>t.id!==id);if(detailId===id)closeModal();commit(dt&&!dt.done&&!dt.sample?'Task moved to Pending':'Task deleted',true)}
 function duplicateTask(id){const t=S.tasks.find(x=>x.id===id);snap();const c=JSON.parse(JSON.stringify(t));c.id=uid();c.created=Date.now();c.order=t.order+.5;c.sample=false;S.tasks.push(c);normalizeOrder();commit('Task duplicated',true)}
 function normalizeOrder(){[...S.tasks].sort((a,b)=>a.order-b.order).forEach((t,i)=>t.order=i)}
 function addTask(o){const t=Object.assign({id:uid(),title:'',desc:'',project:'inbox',section:null,priority:4,due:null,time:null,recur:null,deadline:null,labels:[],subs:[],done:false,doneAt:null,created:Date.now(),order:S.tasks.length?Math.max(...S.tasks.map(x=>x.order))+1:0},o);
@@ -1834,7 +1928,13 @@ document.addEventListener('click',e=>{
   case'toggleSide':if(innerWidth<=860)$('app').classList.toggle('drawer');else $('app').classList.toggle('collapsed');break;
   case'install':stop();window.tfInstall&&window.tfInstall();break;
   case'remDelDt':{stop();snap();S.reminders=S.reminders.filter(r=>r.id!==id);commit('Reminder removed',true);break}
+  case'penRestart':{stop();const t=S.pending.find(x=>x.id===id);if(!t)break;snap();S.pending=S.pending.filter(x=>x.id!==id);const c=JSON.parse(JSON.stringify(t));delete c.deletedAt;c.due=T();c.done=false;c.doneAt=null;if(c.project!=='inbox'&&!proj(c.project))c.project='inbox';if(c.chapter&&!chap(c.chapter))c.chapter=null;if(S.tasks.some(x=>x.id===c.id))c.id=uid();c.order=S.tasks.length?Math.max(...S.tasks.map(x=>x.order))+1:0;S.tasks.push(c);commit('Restarted for today',true);break}
+  case'penDel':{stop();snap();S.pending=S.pending.filter(x=>x.id!==id);commit('Removed forever',true);break}
   case'chAdd':stop();addChapter(id);break;
+  case'chFoldAdd':stop();addChFolder(id);break;
+  case'chFoldTog':{stop();S.ui.chCol=S.ui.chCol||{};S.ui.chCol[b.dataset.k]=!S.ui.chCol[b.dataset.k];save();render();break}
+  case'chFoldDel':{stop();const p=proj(id);if(p){snap();p.chFolders=(p.chFolders||[]).filter(x=>x!==b.dataset.k);S.chapters.forEach(c=>{if(c.project===id&&c.group===b.dataset.k)c.group=''});commit('Folder deleted (chapters kept)',true)}break}
+  case'chImport':stop();tocImport(id);break;
   case'chDel':{stop();const c=chap(id);if(c){snap();S.chapters=S.chapters.filter(x=>x.id!==id);S.tasks.forEach(t=>{if(t.chapter===id)t.chapter=null});commit('Chapter deleted',true)}break}
   case'closeDrawer':$('app').classList.remove('drawer');break;
   case'quickAdd':stop();let add={};try{add=JSON.parse(b.dataset.add||'{}')}catch(_){}quickAdd(add);break;
