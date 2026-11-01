@@ -499,6 +499,7 @@ button:active{transform:scale(.97)}
 .tocrow{display:grid;grid-template-columns:22px 34px 1fr 70px 60px;gap:6px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line)}.tocrow input.inp{padding:5px 6px}.tocrow .n{font-family:var(--f-mono);font-size:12px;color:var(--muted);text-align:right}.tocrow.warn{background:var(--accent-soft)}
 @media(max-width:560px){.tocrow{grid-template-columns:22px 28px 1fr 56px 44px}}
 .chfh .cin,.chg{background:none;border:0;padding:6px 4px;border-radius:6px;font:inherit;color:inherit}.chfh .cin:focus{background:var(--raise);outline:0}.chg{font-size:12px;color:var(--muted)}.chfold>.pgwrap{width:auto}
+.chtop2{font-size:12px;color:var(--muted);margin:0 0 2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -1271,7 +1272,7 @@ const barColor=pct=>`hsl(${Math.round(pct*1.2)},78%,44%)`;
 const chFolders=pid=>{const p=proj(pid),n=[...((p&&p.chFolders)||[])];S.chapters.forEach(c=>{if(c.project===pid&&c.group&&!n.includes(c.group))n.push(c.group)});return n};
 const chStat=L=>{let r=0,t=0;L.forEach(c=>{t+=c.pages||0;r+=Math.min(c.pages||0,chapRead(c))});return{r,t,pc:t>0?Math.round(r*100/t):0}};
 function chRowHTML(c,folders){const r=Math.min(c.pages||0,chapRead(c)),pc=c.pages>0?Math.round(r*100/c.pages):0,nt=S.tasks.filter(t=>t.chapter===c.id),nd=nt.filter(t=>t.done).length;
-  return`<li class="chrow" data-chid="${c.id}"><div class="chtop"><input class="cin chn" data-chn="${c.id}" value="${esc(c.name)}" maxlength="160" aria-label="Chapter name">${folders.length?`<select class="cin chg" data-chg="${c.id}" aria-label="Folder"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}" ${c.group===f?'selected':''}>${esc(f)}</option>`).join('')}</select>`:''}<span class="chpg"><input class="cin chp" type="number" min="0" inputmode="numeric" data-chp="${c.id}" value="${c.pages||0}" aria-label="Total pages"><small>pages</small></span><button class="ibtn" data-a="chDel" data-id="${c.id}" aria-label="Delete chapter">${ic('x')}</button></div>
+  return`<li class="chrow" data-chid="${c.id}"><div class="chtop"><input class="cin chn" data-chn="${c.id}" value="${esc(c.name)}" maxlength="160" aria-label="Chapter name">${folders.length?`<select class="cin chg" data-chg="${c.id}" aria-label="Folder"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}" ${c.group===f?'selected':''}>${esc(f)}</option>`).join('')}</select>`:''}<span class="chpg"><input class="cin chp" type="number" min="0" inputmode="numeric" data-chp="${c.id}" value="${c.pages||0}" aria-label="Total pages"><small>pages</small></span><button class="ibtn" data-a="chDel" data-id="${c.id}" aria-label="Delete chapter">${ic('x')}</button></div>${c.topics?`<div class="chtop2" title="${esc(c.topics)}">${esc(c.topics)}</div>`:''}
     ${c.pages>0?`<div class="pgwrap"><div class="pgtrack"><i style="width:${pc}%;background:${barColor(pc)}"></i></div><span class="pgtxt">${r}/${c.pages} pages · ${pc}%${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span></div>`:`<span class="pgtxt">Set total pages to see progress${nt.length?` · ${nd}/${nt.length} tasks done`:''}</span>`}</li>`}
 function chapCardHTML(pid){const all=projChaps(pid),folders=chFolders(pid);
   const rows=L=>L.length?`<ul class="tl chaps2">${L.map(c=>chRowHTML(c,folders)).join('')}</ul>`:'';
@@ -1317,7 +1318,8 @@ function parseTocPage(data,W){
     const h=l.b.y1-l.b.y0,mid=(l.b.y0+l.b.y1)/2;
     if(pg===null){const c=nums.filter(x=>!used.has(x)&&Math.abs(x.y-mid)<h*1.5&&x.x0>=l.b.x1-5).sort((a,b)=>Math.abs(a.y-mid)-Math.abs(b.y-mid))[0];if(c){pg=c.n;used.add(c)}}
     const nx=lines[i+1];if(nx&&!/;/.test(nx.t)&&nx.t.length<70&&!/^\d{1,3}\s*[.,)]/.test(nx.t)&&!/^chronology$/i.test(nx.t)&&!/^contents$/i.test(nx.t)&&Math.abs(nx.b.x0-l.b.x0)<W*.12&&nx.b.y0-l.b.y1<h*1.3&&/^[A-Za-z(]/.test(nx.t)&&!/^[a-z]/.test(nx.t))title+=' '+nx.t.replace(/\s+\d{1,4}$/,'');
-    out.push({n:+m[1],name:title.replace(/\s+/g,' ').trim(),start:pg})});
+    out.push({n:+m[1],name:title.replace(/\s+/g,' ').trim(),start:pg,y:mid,h})});
+  out.forEach((it,k)=>{if(it.start!=null)return;const nx=out[k+1],lo=it.y-it.h,hi=nx?nx.y-it.h*.5:Infinity;const c=nums.filter(x=>!used.has(x)&&x.y>=lo&&x.y<hi).sort((a,b)=>a.y-b.y)[0];if(c){it.start=c.n;used.add(c)}});
   return{items:out,ends}}
 const tocClean=t=>{let x=t.replace(/\s+/g,' ').trim();for(let i=0;i<3;i++)x=x.replace(/\s+(\d{1,4}|[^\w)\]]{1,3}|[a-z]\d)\s*$/i,'').replace(/^[^\w(]+/,'').trim();return x};
 const tocSus=t=>{const w=t.split(' ');const letters=(t.match(/[A-Za-z]/g)||[]).length;return letters<t.length*.7||w.filter(x=>x.length<=1).length>1||t.length<5||/^c ents$/i.test(t)};
@@ -1332,22 +1334,59 @@ function tocFinish(parsed){const seen=new Map();let end=null,last=0;const ends=[
   idx.forEach(i=>{if(!keep.has(i)){rows[i].start=null;rows[i].miss=true}});
   const lastStart=Math.max(0,...rows.map(r=>r.start||0));const cand=ends.filter(x=>x>lastStart).sort((a,b)=>a-b);end=cand.length?cand[0]:null;
   return{rows,end}}
-async function tocRead(files,onProgress){const out=[];await loadScript(window.TOC_LIBS.tess);
-  const imgs=[];for(const f of files){if(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name)){await loadScript(window.TOC_LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=window.TOC_LIBS.pdfw;const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=doc.numPages;i++)imgs.push({kind:'pdf',doc,i,label:f.name+' p'+i})}else imgs.push({kind:'img',f,label:f.name})}
+const FBV='11.10.0',AI_MODELS=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
+const AI_PROMPT=`These images are the table of contents ("Contents") pages of one book, in order. Some photos may be tilted or curved; read them carefully.
+Return every numbered chapter, in order, with no chapter missing:
+- n: the chapter number (integer)
+- title: the full chapter title exactly as printed (join a title that wraps onto two lines; do NOT include the list of sub-topics)
+- start: the page number printed for that chapter (integer)
+- topics: the sub-topics printed under the chapter, exactly as printed, separated by "; " (empty string if none)
+Also return end_page: the page number of the first item after the last chapter (for example Chronology, Appendix, Bibliography or Index), or null if not shown.
+Use roman numerals only for front matter; ignore Preface, Acknowledgements, List of Plates/Maps.
+Reply with JSON only: {"chapters":[{"n":1,"title":"...","start":1,"topics":"..."}],"end_page":317}`;
+async function renderPages(files,onProgress){const cvs=[];let total=0;const srcs=[];
+  for(const f of files){if(/pdf$/i.test(f.type)||/\.pdf$/i.test(f.name)){await loadScript(window.TOC_LIBS.pdf);pdfjsLib.GlobalWorkerOptions.workerSrc=window.TOC_LIBS.pdfw;const doc=await pdfjsLib.getDocument({data:await f.arrayBuffer()}).promise;for(let i=1;i<=doc.numPages;i++)srcs.push({doc,i})}else srcs.push({f})}
+  total=srcs.length;
+  for(let k=0;k<srcs.length;k++){onProgress('Preparing page '+(k+1)+' of '+total+'…',k/total*.3);const it=srcs[k];let cv=document.createElement('canvas');
+    if(it.doc){const pg=await it.doc.getPage(it.i),vp0=pg.getViewport({scale:1}),sc=Math.min(5,3000/Math.max(vp0.width,vp0.height)),vp=pg.getViewport({scale:sc});cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}
+    else{const bm=await createImageBitmap(it.f),sc=Math.min(1,3000/Math.max(bm.width,bm.height));cv.width=Math.round(bm.width*sc);cv.height=Math.round(bm.height*sc);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height)}
+    cvs.push(cv)}
+  return cvs}
+function jpegB64(cv,max=2000){const sc=Math.min(1,max/Math.max(cv.width,cv.height)),c=document.createElement('canvas');c.width=Math.round(cv.width*sc);c.height=Math.round(cv.height*sc);c.getContext('2d').drawImage(cv,0,0,c.width,c.height);return c.toDataURL('image/jpeg',.85).split(',')[1]}
+async function aiReadToc(cvs,onProgress){
+  if(window.TOC_LIBS.ai)return window.TOC_LIBS.ai(cvs);
+  const appM=await import(`https://www.gstatic.com/firebasejs/${FBV}/firebase-app.js`),aiM=await import(`https://www.gstatic.com/firebasejs/${FBV}/firebase-ai.js`);
+  let app;try{app=appM.getApp('tf-ai')}catch(_){app=appM.initializeApp(FB_CFG,'tf-ai')}
+  const ai=aiM.getAI(app,{backend:new aiM.GoogleAIBackend()});const parts=[{text:AI_PROMPT},...cvs.map(cv=>({inlineData:{mimeType:'image/jpeg',data:jpegB64(cv)}}))];
+  let last;for(const m of AI_MODELS){try{onProgress('Reading with Gemini ('+m+')…',.5);
+      const model=aiM.getGenerativeModel(ai,{model:m,generationConfig:{responseMimeType:'application/json',temperature:0}});
+      const r=await model.generateContent(parts);return r.response.text()}
+    catch(e){last=e;if(/not found|404|is not supported|unsupported|retired|deprecated/i.test(String(e&&e.message)))continue;throw e}}
+  throw last}
+function aiToRows(txt){let j;const t=String(txt).replace(/^```(json)?|```$/g,'').trim();j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
+  const ch=(j.chapters||[]).filter(c=>c&&c.title).map(c=>({n:+c.n||0,name:String(c.title).replace(/\s+/g,' ').trim(),start:Number.isFinite(+c.start)&&c.start!==null&&c.start!==''?Math.floor(+c.start):null,topics:String(c.topics||'').replace(/\s+/g,' ').trim(),inc:true}));
+  ch.forEach((c,i)=>{if(!c.n)c.n=i+1});
+  for(let i=1;i<ch.length;i++)if(ch[i].start!=null&&ch[i-1].start!=null&&ch[i].start<ch[i-1].start)ch[i].miss=true;
+  ch.forEach(c=>{if(c.start==null)c.miss=true});
+  return{rows:ch,end:Number.isFinite(+j.end_page)&&j.end_page!==null?Math.floor(+j.end_page):null}}
+async function ocrReadToc(cvs,onProgress){await loadScript(window.TOC_LIBS.tess);const out=[];
   const worker=await Tesseract.createWorker('eng',1,window.TOC_LIBS.tessOpts);
-  try{for(let k=0;k<imgs.length;k++){onProgress(k,imgs.length);const it=imgs[k];let cv;
-    if(it.kind==='pdf'){const pg=await it.doc.getPage(it.i),vp0=pg.getViewport({scale:1}),sc=Math.min(5,3000/Math.max(vp0.width,vp0.height)),vp=pg.getViewport({scale:sc});cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await pg.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise}
-    else{const bm=await createImageBitmap(it.f),sc=Math.min(1,3000/Math.max(bm.width,bm.height));cv=document.createElement('canvas');cv.width=Math.round(bm.width*sc);cv.height=Math.round(bm.height*sc);cv.getContext('2d').drawImage(bm,0,0,cv.width,cv.height)}
-    const{data}=await worker.recognize(cv);out.push(Object.assign(parseTocPage(data,cv.width),{}));cv.width=cv.height=0}}
+  try{for(let k=0;k<cvs.length;k++){onProgress('Reading page '+(k+1)+' of '+cvs.length+' on this device…',.3+.7*k/cvs.length);const{data}=await worker.recognize(cvs[k]);out.push(parseTocPage(data,cvs[k].width))}}
   finally{await worker.terminate()}
-  onProgress(imgs.length,imgs.length);return out}
+  return tocFinish(out)}
+async function tocRead(files,onProgress){const cvs=await renderPages(files,onProgress);let res,mode='ai',note='';
+  try{const txt=await aiReadToc(cvs,onProgress);res=aiToRows(txt);if(!res.rows.length)throw new Error('no chapters')}
+  catch(e){console.warn('AI read failed, using on-device reading',e);mode='ocr';
+    note=/api.*(not been used|disabled|enable)|AI Logic|PERMISSION|403|firebasevertexai|firebaseml|generativelanguage/i.test(String(e&&e.message))?'Smart reading (Gemini) is not turned on for this app yet, so the photo was read on your device and some lines may be wrong. Please check the highlighted rows.':'Smart reading was not available, so the photo was read on your device and some lines may be wrong. Please check the highlighted rows.';
+    res=await ocrReadToc(cvs,onProgress)}
+  cvs.forEach(c=>{c.width=c.height=0});onProgress('Done',1);return Object.assign(res,{mode,note})}
 function tocImport(pid){const p=proj(pid);if(!p)return;
   const inp=document.createElement('input');inp.type='file';inp.accept='application/pdf,image/*';inp.multiple=true;inp.style.display='none';document.body.appendChild(inp);
   inp.onchange=async()=>{const files=[...inp.files];inp.remove();if(!files.length)return;
-    showModal(`<div class="mh"><b>Reading contents…</b></div><div class="mb"><p id="tocMsg" style="margin:0 0 8px">Starting…</p><div class="pgtrack"><i id="tocBar" style="display:block;height:100%;width:3%;background:var(--strong)"></i></div><p class="muted" style="font-size:12px;margin:8px 0 0">The first time takes a minute (a reading tool is downloaded). Everything is read on your device.</p></div>`);
-    let parsed;try{parsed=await tocRead(files,(k,n)=>{const m=$('tocMsg');if(m){m.textContent=k>=n?'Done':`Reading page ${k+1} of ${n}…`;$('tocBar').style.width=Math.max(3,Math.round(k*100/Math.max(1,n)))+'%'}})}
+    showModal(`<div class="mh"><b>Reading contents…</b></div><div class="mb"><p id="tocMsg" style="margin:0 0 8px">Starting…</p><div class="pgtrack"><i id="tocBar" style="display:block;height:100%;width:3%;background:var(--strong)"></i></div><p class="muted" style="font-size:12px;margin:8px 0 0">This can take up to a minute.</p></div>`);
+    let parsed;try{parsed=await tocRead(files,(msg,f)=>{const m=$('tocMsg');if(m){m.textContent=msg;$('tocBar').style.width=Math.max(3,Math.round(f*100))+'%'}})}
     catch(err){showModal(`<div class="mh"><b>Could not read the file</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><p style="margin:0">${esc(err.message||String(err))}</p></div><div class="mf"><button class="btn pri" data-a="closeModal">OK</button></div>`);return}
-    tocReview(pid,tocFinish(parsed))};
+    tocReview(pid,parsed)};
   inp.click()}
 function tocReview(pid,res){const rows=res.rows,folders=chFolders(pid);
   if(!rows.length){showModal(`<div class="mh"><b>No chapters found</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb"><p style="margin:0">I could not find numbered chapters (like “1. Title”). Try a clearer, straight photo of the contents page, or add chapters by hand.</p></div><div class="mf"><button class="btn pri" data-a="closeModal">OK</button></div>`);return}
@@ -1356,7 +1395,7 @@ function tocReview(pid,res){const rows=res.rows,folders=chFolders(pid);
   const draw=()=>{const calc=calcP();
     return rows.map((r,i)=>`<div class="tocrow ${r.miss||r.start==null?'warn':''}"><input type="checkbox" data-ti="${i}" data-tf="inc" ${r.inc?'checked':''} aria-label="Include"><span class="n">${r.n}</span><input class="inp" data-ti="${i}" data-tf="name" value="${esc(r.name)}" maxlength="160"><input class="inp" type="number" min="0" data-ti="${i}" data-tf="start" value="${r.start==null?'':r.start}" placeholder="start"><span class="n" id="tpg${i}">${calc[i]||'?'}</span></div>`).join('')};
   showModal(`<form id="tocF"><div class="mh"><b>Check chapters</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb" style="max-height:60vh;overflow:auto">
-    <p class="muted" style="margin:0 0 8px;font-size:12.5px">${rows.length} chapters found. Fix any name or <b>start page</b>. Pages of a chapter = next chapter's start − its start. Highlighted rows need a start page.</p>
+    ${res.note?`<p style="margin:0 0 8px;font-size:12.5px;color:var(--p1)">${esc(res.note)}</p>`:''}<p class="muted" style="margin:0 0 8px;font-size:12.5px">${res.mode==='ai'?'Read with Gemini. ':''}${rows.length} chapters found. Fix any name or <b>start page</b>. Pages of a chapter = next chapter's start − its start. Highlighted rows need a start page.</p>
     <div class="tocrow" style="font-size:11px;color:var(--muted)"><span></span><span class="n">No.</span><span>Chapter</span><span>Start pg</span><span class="n">Pages</span></div><div id="tocBody">${draw()}</div>
     <div class="fld" style="margin-top:10px"><label for="tocEnd">Book's last page (or page where the next section starts)</label><input class="inp" id="tocEnd" type="number" min="0" value="${end}" placeholder="for example 320"></div>
     ${folders.length?`<div class="fld"><label for="tocG">Put chapters in folder</label><select class="inp" id="tocG"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select></div>`:''}</div>
@@ -1366,7 +1405,7 @@ function tocReview(pid,res){const rows=res.rows,folders=chFolders(pid);
     if(t.id==='tocEnd'){end=t.value;refresh();return}
     const r=rows[+i];if(t.dataset.tf==='inc')r.inc=t.checked;else if(t.dataset.tf==='name')r.name=t.value;else if(t.dataset.tf==='start'){r.start=t.value===''?null:Math.max(0,Math.floor(+t.value)||0);r.miss=false;refresh()}});
   $('tocF').onsubmit=e=>{e.preventDefault();const calc=calcP(),g=$('tocG')?$('tocG').value:'';snap();let n=0;
-    rows.forEach((r,i)=>{if(!r.inc)return;S.chapters.push({id:uid(),project:pid,name:(r.n+'. '+r.name.replace(/\s*\(not read.*\)$/,'')).slice(0,160),pages:calc[i]||0,group:g,order:S.chapters.length,created:Date.now()});n++});
+    rows.forEach((r,i)=>{if(!r.inc)return;S.chapters.push({id:uid(),project:pid,name:(r.n+'. '+r.name.replace(/\s*\(not read.*\)$/,'')).slice(0,160),topics:(r.topics||'').slice(0,1500),pages:calc[i]||0,group:g,order:S.chapters.length,created:Date.now()});n++});
     closeModal();commit(n+' chapters added',true)}}
 function chapPop(anchor,pid,cur,cb){openPop(anchor,(el,close)=>{const L=projChaps(pid);
   el.innerHTML=`<div class="ll"><button class="pi" data-c="">${ic('x')}<span class="lab">No chapter</span>${!cur?'<span class="r">✓</span>':''}</button>${L.map(c=>`<button class="pi" data-c="${c.id}">${ic('book')}<span class="lab">${esc(c.name)}</span>${cur===c.id?'<span class="r">✓</span>':''}</button>`).join('')}</div>${L.length?'':'<div class="muted" style="padding:8px;font-size:12px">Add chapters on the subject page first.</div>'}`;
