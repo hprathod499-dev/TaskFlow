@@ -752,7 +752,7 @@ function attach(u){
       if(S.dirty){S=mergeData(S,remote);S.dirty=true;S.updatedAt=Date.now();lastSig=sig();saveLocal();pushNow()}
       else adopt(remote);
       if(!validView(view))view='today';
-      render();setStatus('synced');maybeWelcome(false);setTimeout(checkWeekly,400);return}
+      render();setStatus('synced');maybeWelcome(false);setTimeout(unarchiveAll,800);return}
     if(!v||!v.json||v.writer===CLIENT||S.dirty)return;
     try{adopt(JSON.parse(v.json));render();setStatus('synced');checkWeekly()}catch(e){}
   },err=>{console.error(err);setStatus('error')});
@@ -870,7 +870,7 @@ async function arcAll(u){
   return new Promise((res,rej)=>{const out={tasks:[],log:[]};const q=d.transaction('items').objectStore('items').openCursor();
     q.onsuccess=()=>{const c=q.result;if(!c){d.close();res(out);return}const v=c.value;if(v.u===u)(v.kind==='t'?out.tasks:out.log).push(v.data);c.continue()};
     q.onerror=()=>rej(q.error||new Error('Archive storage failed.'))})}
-function stashPurged(remote){
+function stashPurged(remote){return;
   if(!cloud.user||!remote||!Array.isArray(remote.tasks))return;
   const c=arcCut(),rt=new Set(remote.tasks.map(t=>t.id)),rl=new Set((remote.log||[]).map(e=>e.id));
   const t=S.tasks.filter(x=>oldDone(x,c)&&!rt.has(x.id)),l=S.log.filter(e=>e.at<c&&!rl.has(e.id));
@@ -909,25 +909,28 @@ async function driveBackup(purge){
     S.arch={last:Date.now(),n:((S.arch&&S.arch.n)||0)+1};save();render()}
   else saveLocal();
   return{name,moved:out.tasks.length+out.log.length,total:archive.tasks.length+archive.log.length}}
+/* Data is kept forever now: put anything earlier archived on this device back into the live list. */
+async function unarchiveAll(){const u=cloud.user;if(!u)return 0;let a;try{a=await arcAll(u.uid)}catch(_){return 0}
+  const ht=new Set(S.tasks.map(t=>t.id)),hl=new Set(S.log.map(e=>e.id));let n=0;
+  a.tasks.forEach(t=>{if(!ht.has(t.id)){S.tasks.push(t);ht.add(t.id);n++}});a.log.forEach(e=>{if(!hl.has(e.id)){S.log.push(e);hl.add(e.id);n++}});
+  if(n){save();render();toast(`${n} older item${n===1?'':'s'} brought back from this device`)}return n}
 async function driveRestore(id){
   const u=cloud.user;if(!u)throw new Error('Sign in first.');
   const n=await(await gfetch(`https://www.googleapis.com/drive/v3/files/${id}?alt=media`)).json();
   const p=unpack(n);if(!p)throw new Error('This file is not a TaskFlow backup.');
-  const c=arcCut(),lv=p.live;
-  const aT=idMerge(p.archive.tasks,(lv.tasks||[]).filter(t=>oldDone(t,c)));
-  const aL=idMerge(p.archive.log,(lv.log||[]).filter(e=>e.at<c));
-  await arcPut(u.uid,aT,aL);
+  const lv=p.live;
   snap();
   let added=0;
   const addMissing=(k,list)=>{const have=new Set((S[k]||[]).map(x=>x.id));(list||[]).forEach(x=>{if(!have.has(x.id)){S[k].push(x);have.add(x.id);if(k==='tasks')added++}})};
   ensure(S);['projects','sections','labels','filters','books','reminders','exams','chapters','pending'].forEach(k=>addMissing(k,lv[k]));
-  addMissing('tasks',(lv.tasks||[]).filter(t=>!oldDone(t,c)&&!t.sample));
-  addMissing('log',(lv.log||[]).filter(e=>e.at>=c));
+  addMissing('tasks',[...(lv.tasks||[]),...p.archive.tasks].filter(t=>!t.sample));
+  addMissing('log',[...(lv.log||[]),...p.archive.log]);
+  ['topics'].forEach(k=>{if(Array.isArray(lv[k])){S[k]=S[k]||[];addMissing(k,lv[k])}});
   S.updatedAt=Date.now();save();if(!validView(view))view='today';closeModal();render();
-  toast(`Restored: ${added} task${added===1?'':'s'} added, ${aT.length+aL.length} older item${aT.length+aL.length===1?'':'s'} kept on this device`,true)}
+  toast(`Restored: ${added} task${added===1?'':'s'} added`,true)}
 /* compulsory weekly backup */
 let weeklyBusy=false,weeklySkip=false;
-function weeklyDue(){
+function weeklyDue(){return false;
   if(!cloud.user||cloud.first||navigator.onLine===false)return false;
   if(Date.now()-((S.arch&&S.arch.last)||0)<ARC_DAYS*864e5)return false;
   const a=archivable();return a.tasks.length+a.log.length>0}
@@ -956,7 +959,7 @@ function driveErr(e){const m=(e&&e.message)||'';
 function driveBlock(){const u=cloud.user;
   const last=S.ui.lastBackup?new Date(S.ui.lastBackup).toLocaleString([],{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):null;
   return `<details class="dd"><summary>Google Drive backup</summary><div class="ddb">`+(u
-   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Saves a copy of your live tasks and your full archive in a “TaskFlow Backups” folder in your Google Drive and keeps the latest 10. Every ${ARC_DAYS} days the app asks for a backup and then moves completed work older than ${ARC_DAYS} days off the live list. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
+   ?`<p class="muted" style="margin:0 0 8px;font-size:13px">Your data is kept forever in your account. This also saves a full copy in a “TaskFlow Backups” folder in your Google Drive (latest 10 kept), so you can bring everything back on a new phone. ${last?'Last backup from this device: '+last+'.':'No backup made yet.'}</p>
    <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn pri" id="gdBack">Back up now</button><button class="btn sec" id="gdRest">Restore from Drive</button></div>
    <div class="muted" id="gdMsg" style="font-size:12px;margin-top:6px" role="status"></div><div id="gdList"></div>`
    :`<p class="muted" style="margin:0;font-size:13px">Sign in with Google to use Drive backup.</p>`)+`</div></details>`}
@@ -1246,7 +1249,7 @@ async function fillArc(){
   const bx=$('arcBox');if(!bx)return;
   const live=new Set(S.log.map(e=>e.id)),all=a.log.filter(e=>!live.has(e.id)).sort((x,y)=>y.at-x.at),log=all.slice(0,300);
   const head=`<h2 class="hdr2" style="margin-top:28px;font-size:15px">Older history <span class="muted" style="font-weight:500;font-size:12px">saved on this device</span></h2>`;
-  if(!log.length){bx.innerHTML=head+`<p class="muted" style="font-size:13px">Completed work older than ${ARC_DAYS} days appears here after a weekly backup. If this is a new device, restore from Google Drive in Settings to bring it back.</p>`;return}
+  if(!log.length){bx.innerHTML=head+`<p class="muted" style="font-size:13px">All completed work is kept in the list above. If something is missing on a new device, restore from Google Drive in Settings.</p>`;return}
   const byDay={};log.forEach(e=>{const k=iso(new Date(e.at));(byDay[k]=byDay[k]||[]).push(e)});
   bx.innerHTML=head+Object.keys(byDay).sort().reverse().map(k=>{const d=pd(k);
     return`<div class="hdr2">${d.getDate()} ${MON[d.getMonth()]} ${d.getFullYear()} · ${DAYS[d.getDay()]}<span class="muted" style="font-weight:500;font-size:12px">${byDay[k].length} done</span></div>`+
@@ -1329,7 +1332,6 @@ function parseTocPage(data,W){
     if(pg===null){const c=nums.filter(x=>!used.has(x)&&Math.abs(x.y-mid)<h*1.5&&x.x0>=l.b.x1-5).sort((a,b)=>Math.abs(a.y-mid)-Math.abs(b.y-mid))[0];if(c){pg=c.n;used.add(c)}}
     const nx=lines[i+1];if(nx&&!/;/.test(nx.t)&&nx.t.length<70&&!/^\d{1,3}\s*[.,)]/.test(nx.t)&&!/^chronology$/i.test(nx.t)&&!/^contents$/i.test(nx.t)&&Math.abs(nx.b.x0-l.b.x0)<W*.12&&nx.b.y0-l.b.y1<h*1.3&&/^[A-Za-z(]/.test(nx.t)&&!/^[a-z]/.test(nx.t))title+=' '+nx.t.replace(/\s+\d{1,4}$/,'');
     out.push({n:+m[1],name:title.replace(/\s+/g,' ').trim(),start:pg,y:mid,h})});
-  out.forEach((it,k)=>{if(it.start!=null)return;const nx=out[k+1],lo=it.y-it.h,hi=nx?nx.y-it.h*.5:Infinity;const c=nums.filter(x=>!used.has(x)&&x.y>=lo&&x.y<hi).sort((a,b)=>a.y-b.y)[0];if(c){it.start=c.n;used.add(c)}});
   return{items:out,ends}}
 const tocClean=t=>{let x=t.replace(/\s+/g,' ').trim();for(let i=0;i<3;i++)x=x.replace(/\s+(\d{1,4}|[^\w)\]]{1,3}|[a-z]\d)\s*$/i,'').replace(/^[^\w(]+/,'').trim();return x};
 const tocSus=t=>{const w=t.split(' ');const letters=(t.match(/[A-Za-z]/g)||[]).length;return letters<t.length*.7||w.filter(x=>x.length<=1).length>1||t.length<5||/^c ents$/i.test(t)};
@@ -1344,7 +1346,7 @@ function tocFinish(parsed){const seen=new Map();let end=null,last=0;const ends=[
   idx.forEach(i=>{if(!keep.has(i)){rows[i].start=null;rows[i].miss=true}});
   const lastStart=Math.max(0,...rows.map(r=>r.start||0));const cand=ends.filter(x=>x>lastStart).sort((a,b)=>a-b);end=cand.length?cand[0]:null;
   return{rows,end}}
-const FBV='11.10.0',AI_MODELS=['gemini-2.5-flash','gemini-2.5-flash-lite','gemini-2.0-flash'];
+const FBV='12.19.0',AI_MODELS=['gemini-3.5-flash','gemini-3.6-flash','gemini-3.1-flash-lite','gemini-3.5-flash-lite','gemini-3-flash-preview','gemini-flash-latest','gemini-2.5-flash'];
 const AI_PROMPT=`These images are the table of contents ("Contents") pages of one book, in order. Some photos may be tilted or curved; read them carefully.
 Return every numbered chapter, in order, with no chapter missing:
 - n: the chapter number (integer)
@@ -1371,7 +1373,7 @@ async function aiReadToc(cvs,onProgress){
   let last;for(const m of AI_MODELS){try{onProgress('Reading with Gemini ('+m+')…',.5);
       const model=aiM.getGenerativeModel(ai,{model:m,generationConfig:{responseMimeType:'application/json',temperature:0}});
       const r=await model.generateContent(parts);return r.response.text()}
-    catch(e){last=e;if(/not found|404|is not supported|unsupported|retired|deprecated/i.test(String(e&&e.message)))continue;throw e}}
+    catch(e){last=e;if(/not.?found|404|is not supported|unsupported|retired|deprecated|no longer available/i.test(String(e&&e.message)))continue;throw e}}
   throw last}
 function aiToRows(txt){let j;const t=String(txt).replace(/^```(json)?|```$/g,'').trim();j=JSON.parse(t.slice(t.indexOf('{'),t.lastIndexOf('}')+1));
   const ch=(j.chapters||[]).filter(c=>c&&c.title).map(c=>({n:+c.n||0,name:String(c.title).replace(/\s+/g,' ').trim(),start:Number.isFinite(+c.start)&&c.start!==null&&c.start!==''?Math.floor(+c.start):null,topics:String(c.topics||'').replace(/\s+/g,' ').trim(),inc:true}));
@@ -1397,18 +1399,13 @@ function mergeToc(A,B){const m=new Map(),good=it=>(it.start!=null?2:0)+(tocSus(t
   return{items:[...m.values()].sort((a,b)=>a.n-b.n),ends:[...(A.ends||[]),...(B.ends||[])]}}
 async function ocrReadToc(cvs,onProgress){await loadScript(window.TOC_LIBS.tess);const out=[];
   const worker=await Tesseract.createWorker('eng',1,window.TOC_LIBS.tessOpts);
-  try{for(let k=0;k<cvs.length;k++){const f=.3+.7*k/cvs.length;
-      onProgress('Reading page '+(k+1)+' of '+cvs.length+' (pass 1 of 2)…',f);await worker.setParameters({tessedit_pageseg_mode:'3'});
-      const A=parseTocPage((await worker.recognize(cvs[k])).data,cvs[k].width);
-      onProgress('Reading page '+(k+1)+' of '+cvs.length+' (pass 2 of 2, straightened)…',f+.35/cvs.length);const pp=prepCanvas(cvs[k]);await worker.setParameters({tessedit_pageseg_mode:'6'});
-      const B=parseTocPage((await worker.recognize(pp.cv)).data,pp.cv.width);pp.cv.width=pp.cv.height=0;
-      out.push(mergeToc(A,B))}}
+  try{for(let k=0;k<cvs.length;k++){onProgress('Reading page '+(k+1)+' of '+cvs.length+' on this device…',.3+.7*k/cvs.length);const{data}=await worker.recognize(cvs[k]);out.push(parseTocPage(data,cvs[k].width))}}
   finally{await worker.terminate()}
   return tocFinish(out)}
 async function tocRead(files,onProgress){const cvs=await renderPages(files,onProgress);let res,mode='ai',note='';
   try{const txt=await aiReadToc(cvs,onProgress);res=aiToRows(txt);if(!res.rows.length)throw new Error('no chapters')}
   catch(e){console.warn('AI read failed, using on-device reading',e);mode='ocr';
-    note=/api.*(not been used|disabled|enable)|AI Logic|PERMISSION|403|firebasevertexai|firebaseml|generativelanguage/i.test(String(e&&e.message))?'Smart reading (Gemini) is not turned on for this app yet, so the photo was read on your device and some lines may be wrong. Please check the highlighted rows.':'Smart reading was not available, so the photo was read on your device and some lines may be wrong. Please check the highlighted rows.';
+    const em=String(e&&e.message||e);note=(/api.*(not been used|disabled|enable)|PERMISSION|403/i.test(em)?'Smart reading (Gemini) is not turned on for this app yet':'Smart reading (Gemini) failed: '+em.slice(0,160))+'. The photo was read on your device instead, so some lines may be wrong. Please check the highlighted rows.';
     res=await ocrReadToc(cvs,onProgress)}
   cvs.forEach(c=>{c.width=c.height=0});onProgress('Done',1);return Object.assign(res,{mode,note})}
 function tocImport(pid){const p=proj(pid);if(!p)return;
@@ -1438,6 +1435,21 @@ function tocReview(pid,res){const rows=res.rows,folders=chFolders(pid);
   $('tocF').onsubmit=e=>{e.preventDefault();const calc=calcP(),g=$('tocG')?$('tocG').value:'';snap();let n=0;
     rows.forEach((r,i)=>{if(!r.inc)return;S.chapters.push({id:uid(),project:pid,name:(r.n+'. '+r.name.replace(/\s*\(not read.*\)$/,'')).slice(0,160),topics:(r.topics||'').slice(0,1500),pages:calc[i]||0,group:g,order:S.chapters.length,created:Date.now()});n++});
     closeModal();commit(n+' chapters added',true)}}
+/* ---- recover chapters that are hidden: subject deleted, or saved by the old Syllabus page ---- */
+function lostChapterGroups(){const g=new Map(),add=(key,label,item)=>{if(!g.has(key))g.set(key,{key,label,items:[]});g.get(key).items.push(item)};
+  S.chapters.forEach(c=>{if(!proj(c.project))add('c:'+c.project,'Chapters of a deleted subject',{kind:'c',id:c.id,name:c.name,pages:c.pages||0})});
+  (S.topics||[]).forEach(t=>{const p=proj(t.project);add('t:'+t.project,(p?p.name:'Old syllabus')+' (old Syllabus page)',{kind:'t',id:t.id,name:t.name,pages:0})});
+  return[...g.values()]}
+function recoverHTML(pid){const G=lostChapterGroups();if(!G.length)return'';const n=G.reduce((a,x)=>a+x.items.length,0);
+  return`<div class="banner" style="margin:10px 0">🔎 <b>${n} saved chapter${n>1?'s':''} found that are not shown anywhere</b> (from a deleted subject or the old Syllabus page).<button data-a="recoverOpen" data-id="${pid}">See and restore</button></div>`}
+function recoverModal(pid){const G=lostChapterGroups(),folders=chFolders(pid);
+  showModal(`<div class="mh"><b>Restore chapters into ${esc(proj(pid).name)}</b><button type="button" class="ibtn" data-a="closeModal" aria-label="Close">${ic('x')}</button></div><div class="mb" style="max-height:60vh;overflow:auto">
+    ${folders.length?`<div class="fld"><label for="rcG">Put them in folder</label><select class="inp" id="rcG"><option value="">No folder</option>${folders.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('')}</select></div>`:''}
+    ${G.map((x,i)=>`<div class="nkcard" style="margin-bottom:10px;padding:12px"><div class="nkh" style="margin-bottom:6px"><span class="mon" style="font-size:14px">${esc(x.label)} · ${x.items.length}</span><button class="btn pri" data-a="recoverGo" data-id="${pid}" data-k="${i}">Restore here</button></div><div class="muted" style="font-size:12.5px">${x.items.slice(0,6).map(it=>esc(it.name)).join('<br>')}${x.items.length>6?'<br>…':''}</div></div>`).join('')}</div>
+    <div class="mf"><button class="btn sec" data-a="closeModal">Close</button></div>`)}
+function recoverGo(pid,k){const x=lostChapterGroups()[+k];if(!x)return;const g=$('rcG')?$('rcG').value:'';snap();
+  x.items.forEach(it=>{if(it.kind==='c'){const c=chap(it.id);if(c){c.project=pid;c.group=g}}else{S.chapters.push({id:uid(),project:pid,name:it.name,pages:0,group:g,order:S.chapters.length,created:Date.now()});S.topics=S.topics.filter(t=>t.id!==it.id)}});
+  closeModal();commit(x.items.length+' chapters restored',true)}
 function chapPop(anchor,pid,cur,cb){openPop(anchor,(el,close)=>{const L=projChaps(pid);
   el.innerHTML=`<div class="ll"><button class="pi" data-c="">${ic('x')}<span class="lab">No chapter</span>${!cur?'<span class="r">✓</span>':''}</button>${L.map(c=>`<button class="pi" data-c="${c.id}">${ic('book')}<span class="lab">${esc(c.name)}</span>${cur===c.id?'<span class="r">✓</span>':''}</button>`).join('')}</div>${L.length?'':'<div class="muted" style="padding:8px;font-size:12px">Add chapters on the subject page first.</div>'}`;
   el.addEventListener('click',e=>{const b=e.target.closest('[data-c]');if(!b)return;cb(b.dataset.c||null);close()})})}
@@ -1633,7 +1645,7 @@ function render(){
     else if(v==='upcoming')body=upcomingHTML(L);
     else body=listHTML(v,L);
     if(['inbox','today'].includes(v)||k==='p')body=sampleBanner()+body;
-    if(k==='p'&&id!=='inbox'&&proj(id)&&!isFolder(id))body=chapCardHTML(id)+body;
+    if(k==='p'&&id!=='inbox'&&proj(id)&&!isFolder(id))body=recoverHTML(id)+chapCardHTML(id)+body;
     if(k==='b'&&book(id))body=chapHTML(book(id))+body;}
   else if(v==='completed'){body=completedHTML();sub=`<div class="subline">Your activity across all subjects</div>`}
   else if(v==='calendar')body=taskCalHTML();
@@ -2005,6 +2017,8 @@ document.addEventListener('click',e=>{
   case'penDel':{stop();snap();S.pending=S.pending.filter(x=>x.id!==id);commit('Removed forever',true);break}
   case'chToday':{stop();const c=chap(id);if(!c)break;const left=c.pages>0?Math.max(0,c.pages-chapRead(c)):0;
     numPop(b,'Pages to read today',left||'',n=>{snap();const t=addTask({title:'Read '+c.name.replace(/^\d+\.\s*/,''),project:c.project,due:T(),chapter:c.id,pages:n||0,pagesRead:0,pageLog:[]});commit(`Added to Today's task${n?` · ${n} pages`:''}`,true)});break}
+  case'recoverOpen':stop();recoverModal(id);break;
+  case'recoverGo':stop();recoverGo(id,b.dataset.k);break;
   case'chAdd':stop();addChapter(id);break;
   case'chFoldAdd':stop();addChFolder(id);break;
   case'chFoldTog':{stop();S.ui.chCol=S.ui.chCol||{};S.ui.chCol[b.dataset.k]=!S.ui.chCol[b.dataset.k];save();render();break}
