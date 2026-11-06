@@ -535,7 +535,7 @@ button:active{transform:scale(.97)}
 </div>
 <button class="fab" data-a="quickAdd" aria-label="Add task" id="fab"></button>
 <div id="login" hidden><div class="lcard"><div class="lb"><i></i>TaskFlow</div>
-<p>Sign in to keep your tasks in sync across your phone and computer.</p>
+<p>Sign in to open TaskFlow. Access is for existing users only.</p>
 <button class="gbtn" data-a="signIn"><svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg><span>Sign in with Google</span></button>
 <div id="loginErr" role="alert"></div></div></div>
 <div id="weekly" hidden role="dialog" aria-modal="true" aria-labelledby="wkT"><div class="lcard"><div class="lb"><i></i>TaskFlow</div>
@@ -775,12 +775,13 @@ function attach(u){
   db.ref('.info/connected').on('value',x=>{cloud.online=!!x.val();
     if(!cloud.online&&cloud.ref)setStatus('offline');else if(cloud.status==='offline')setStatus(S.dirty?'syncing':'synced')})}
 function detach(){try{if(cloud.ref){cloud.ref.off();db.ref('.info/connected').off()}}catch(e){}cloud.ref=null;cloud.user=null;clearTimeout(cloud.timer)}
-/* Sign-in is optional: the app opens straight away and works on this device. Sign in later from the profile/Settings to sync. */
-function showLogin(){}
+function showLogin(){const l=document.getElementById('login');if(l)l.hidden=false}
 function hideLogin(){const l=document.getElementById('login');if(l)l.hidden=true}
 function showLoginErr(e){const m={
   'auth/unauthorized-domain':`This web address (${location.hostname}) is not allowed yet. In Firebase, open Authentication > Settings > Authorized domains and add it.`,
   'auth/operation-not-allowed':'Google sign-in is switched off. In Firebase, open Authentication > Sign-in method and enable Google.',
+  'auth/admin-restricted-operation':'Access is closed. Only existing TaskFlow users can sign in.',
+  'auth/user-disabled':'This account has been disabled.',
   'auth/network-request-failed':'No internet connection. Try again when you are online.'}[e&&e.code]||('Sign-in failed. '+(e&&e.message?e.message:''));
   const el=document.getElementById('loginErr');if(el)el.textContent=m;if(document.getElementById('login').hidden)toast(m)}
 function doSignIn(){
@@ -999,7 +1000,7 @@ function accountBlock(){const u=cloud.user;
    :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="gbtn" data-a="signIn">${GLOGO}<span>Sign in with Google</span></button>`)}
 function initCloud(){
   try{firebase.initializeApp(FB_CFG);auth=firebase.auth();db=firebase.database()}
-  catch(e){console.warn('Firebase unavailable',e);setStatus('local');return}
+  catch(e){console.warn('Firebase unavailable',e);setStatus('local');showLogin();showLoginErr({message:'Could not reach the sign-in service. Check your internet connection and reload this page.'});return}
   auth.getRedirectResult().catch(showLoginErr);
   auth.onAuthStateChanged(u=>{
     if(u){cloud.welcome=!document.getElementById('login').hidden;hideLogin();detach();attach(u);render()}
