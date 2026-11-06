@@ -793,7 +793,7 @@ function doSignIn(){
     showLoginErr(e)})}
 function doSignOut(){
   const a=auth;detach();
-  S=sampleData();S.tasks=[];S.log=[];S.projects=[];S.sections=[];S.labels=[];S.filters=[];S.recent=['today'];S.dirty=false;lastSig=sig();saveLocal();applyTheme();
+  S=ensure(sampleData());S.tasks=[];S.log=[];S.projects=[];S.sections=[];S.labels=[];S.filters=[];S.recent=['today'];S.dirty=false;lastSig=sig();saveLocal();applyTheme();
   closeModal();$('app').classList.remove('drawer');view='today';location.hash='today';setStatus('local');render();showLogin();
   const el=document.getElementById('loginErr');if(el)el.textContent='';
   Promise.resolve(a.signOut()).catch(()=>{}).then(()=>{showLogin()})}
