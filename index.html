@@ -775,7 +775,8 @@ function attach(u){
   db.ref('.info/connected').on('value',x=>{cloud.online=!!x.val();
     if(!cloud.online&&cloud.ref)setStatus('offline');else if(cloud.status==='offline')setStatus(S.dirty?'syncing':'synced')})}
 function detach(){try{if(cloud.ref){cloud.ref.off();db.ref('.info/connected').off()}}catch(e){}cloud.ref=null;cloud.user=null;clearTimeout(cloud.timer)}
-function showLogin(){const l=document.getElementById('login');if(l)l.hidden=false}
+/* Sign-in is optional: the app opens straight away and works on this device. Sign in later from the profile/Settings to sync. */
+function showLogin(){}
 function hideLogin(){const l=document.getElementById('login');if(l)l.hidden=true}
 function showLoginErr(e){const m={
   'auth/unauthorized-domain':`This web address (${location.hostname}) is not allowed yet. In Firebase, open Authentication > Settings > Authorized domains and add it.`,
@@ -998,7 +999,7 @@ function accountBlock(){const u=cloud.user;
    :`<p class="muted" style="margin:0 0 8px;font-size:13px">Not signed in. Tasks stay on this device only.</p><button class="gbtn" data-a="signIn">${GLOGO}<span>Sign in with Google</span></button>`)}
 function initCloud(){
   try{firebase.initializeApp(FB_CFG);auth=firebase.auth();db=firebase.database()}
-  catch(e){console.warn('Firebase unavailable',e);setStatus('local');showLogin();showLoginErr({message:'Could not reach the sign-in service. Check your internet connection and reload this page.'});return}
+  catch(e){console.warn('Firebase unavailable',e);setStatus('local');return}
   auth.getRedirectResult().catch(showLoginErr);
   auth.onAuthStateChanged(u=>{
     if(u){cloud.welcome=!document.getElementById('login').hidden;hideLogin();detach();attach(u);render()}
